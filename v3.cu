@@ -3,7 +3,7 @@
 #define SIDE 256
 
 #include "float.c"
-
+;
 const int dsize = sizeof(float);
 
 __device__
@@ -31,27 +31,60 @@ float Vz2(float x, float y, float xi, float y1, float y2, float z1, float z2, fl
 	return Vz1(x, y, xi, y2, z1, z2, H) - Vz1(x, y, xi, y1, z1, z2, H);
 }
 
-__global__
-void Vz3(float x, float y, float x1, float x2, float y1, float y2, float z1, float z2, float H, float* result)
+__device__
+float Vz3(float x, float y, float x1, float x2, float y1, float y2, float z1, float z2, float H)
 {
-	*result = Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
+	return Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
+}
+
+__global__
+void Calculate(float xLL, float yLL, float xStep, float yStep, float* top, float* bottom, float* result)
+{
+	float x = xLL + xStep * blockIdx.x;
+	float y = yLL + yStep * blockIdx.y;
+	
+	float x1 = xLL + xStep * threadIdx.x;
+	float x2 = x1 + xStep;
+	
+	float y1 = yLL + yStep * threadIdx.y;
+	float y2 = y1 + yStep;
+	
+	int pos_grid = threadIdx.x + threadIdx.y * SIDE;
+	float t = top[pos_grid];
+	float b = bottom[pos_grid];
+	
+	int pos_result = blockIdx.x + blockIdx.y * SIDE;
+	
+	float r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
+	
+	//atomicAdd(&result[pos_result], r);
+	result[pos_result] += r;
 }
 
 int main()
 {
-	float *result;
-	cudaMalloc((void**)&result, dsize);
+	float *result = (float*)malloc(SIDE * SIDE * dsize);
+	memset(result, 0, SIDE * SIDE * dsize);
 	
-	dim3 blocks(SIDE, SIDE);
-	dim3 threads(SIDE, SIDE);
+	float *resultd, *catd, *zerod;
+	cudaMalloc((void**)&resultd, SIDE * SIDE * dsize);
+	cudaMalloc((void**)&catd, SIDE * SIDE * dsize);
+	cudaMalloc((void**)&zerod, SIDE * SIDE * dsize);
 	
-	Vz3<<<blocks,threads>>>(0, 0, -100000000, 100000000, -100000000, 100000000, 1, 0, 0, result);
+	cudaMemcpy(zerod, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	cudaMemcpy(resultd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	cudaMemcpy(catd, cat, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	
+	dim3 blocks(1, 1);
+	dim3 threads(1, 1);
+	
+	//Vz3<<<blocks,threads>>>(0, 0, -100000000, 100000000, -100000000, 100000000, 1, 0, 0, result);
 	//V<<<1,1>>>(result);
+	Calculate<<<blocks,threads>>>(10000, 11000, 4, 4, zerod, catd, resultd);
 	
-	float r;
-	cudaMemcpy(&r, result, dsize, cudaMemcpyDeviceToHost );
-	cudaFree( result );
-	printf("%f\n", r);
+	cudaMemcpy(result, resultd, SIDE * SIDE * dsize, cudaMemcpyDeviceToHost);
+	cudaFree( resultd );
+	printf("%f\n", result[0]);
 	
 	return 0;
 }
