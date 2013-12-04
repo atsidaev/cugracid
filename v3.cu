@@ -9,6 +9,8 @@
 #define FLOAT double
 const int dsize = sizeof(FLOAT);
 
+#include "d:\\IGF\\2013-12-04\\fund.c"
+
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 {
@@ -53,8 +55,8 @@ void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT*
 	FLOAT y2 = y1 + yStep;
 	
 	int pos_grid = threadIdx.x + yLine * SIDE;
-	FLOAT t = 1; //top[pos_grid];
-	FLOAT b = 0; //bottom[pos_grid];
+	FLOAT t = 40.326; //top[pos_grid];
+	FLOAT b = bottom[pos_grid];
 	
 	int pos_result = blockIdx.x + blockIdx.y * SIDE;
 	
@@ -86,15 +88,15 @@ int main()
 	FLOAT *sync= (FLOAT*)malloc(SIDE * SIDE * SIDE * dsize);
 	memset(sync, 0, SIDE * SIDE * SIDE * dsize);
 
-	FLOAT *resultd, *catd, *zerod, *syncd;
+	FLOAT *resultd, *bottomd, *topd, *syncd;
 	cudaMalloc((void**)&resultd, SIDE * SIDE * dsize);
-	cudaMalloc((void**)&catd, SIDE * SIDE * dsize);
-	cudaMalloc((void**)&zerod, SIDE * SIDE * dsize);
+	cudaMalloc((void**)&bottomd, SIDE * SIDE * dsize);
+	cudaMalloc((void**)&topd, SIDE * SIDE * dsize);
 	cudaMalloc((void**)&syncd, SIDE * SIDE * SIDE * dsize);
 
-	cudaMemcpy(zerod, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	cudaMemcpy(topd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
 	cudaMemcpy(resultd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
-	//cudaMemcpy(catd, cat, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	cudaMemcpy(bottomd, grid, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
 	
 	dim3 blocks(SIDE, SIDE);
 	dim3 threads(SIDE);
@@ -104,7 +106,7 @@ int main()
 	for (int i = 0; i < SIDE; i++)
 	{
 		cudaMemset(syncd, 0, SIDE * SIDE * SIDE * dsize);
-		Calculate<<<blocks,threads>>>(i, 10000, 11000, 4, 4, zerod, catd, resultd, syncd);
+		Calculate<<<blocks,threads>>>(i, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd, bottomd, resultd, syncd);
 	}
 	cudaThreadSynchronize();
 	cudaError_t error = cudaGetLastError();
@@ -114,5 +116,9 @@ int main()
 	cudaFree( resultd );
 	printf("%f\n", result[(SIDE / 2) * SIDE + SIDE / 2]);
 	
+	FILE *f = fopen("d:\\fund_f.bin", "wb");
+	fwrite(result, dsize, SIDE * SIDE, f);
+	fclose(f);
+
 	return 0;
 }
