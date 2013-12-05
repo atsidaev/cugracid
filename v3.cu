@@ -9,7 +9,7 @@
 #define FLOAT double
 const int dsize = sizeof(FLOAT);
 
-#include "d:\\IGF\\2013-12-04\\fund.c"
+#include "fund.c"
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -67,13 +67,21 @@ void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT*
 	sync[pos_result * SIDE + threadIdx.x] = r;
 	FLOAT res = result[pos_result];
 	__syncthreads();
+	if (threadIdx.x)
+		return;
+
 	for (int i = 0, p = pos_result * SIDE; i < SIDE; i++, p++)
 		res += sync[p];
 	result[pos_result] = res;
+	// atomicAdd(&result[pos_result], r);
 }
 
 int main()
 {
+	int deviceCount;
+	cudaGetDeviceCount(&deviceCount);
+	printf("Found %d CUDA devices\n", deviceCount);
+
 	cudaDeviceProp props;
 	cudaGetDeviceProperties(&props, 0);
 	printf("%s API version %d.%d\n", props.name, props.major, props.minor);
@@ -81,6 +89,7 @@ int main()
     
 	printf("Max block dimensions: [%d, %d, %d]\n", props.maxThreadsDim[0], props.maxThreadsDim[1], props.maxThreadsDim[2]);
 	printf("Threads per block: %d\n", props.maxThreadsPerBlock);
+	printf("Registers per block: %d\n", props.regsPerBlock);
 	
 	FLOAT *result = (FLOAT*)malloc(SIDE * SIDE * dsize);
 	memset(result, 0, SIDE * SIDE * dsize);
@@ -108,7 +117,7 @@ int main()
 		cudaMemset(syncd, 0, SIDE * SIDE * SIDE * dsize);
 		Calculate<<<blocks,threads>>>(i, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd, bottomd, resultd, syncd);
 	}
-	cudaThreadSynchronize();
+	cudaDeviceSynchronize();
 	cudaError_t error = cudaGetLastError();
 	printf("Error: %s\n", cudaGetErrorString(error));
 	
@@ -122,3 +131,4 @@ int main()
 
 	return 0;
 }
+
