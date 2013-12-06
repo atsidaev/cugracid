@@ -16,7 +16,8 @@ int main()
 	FLOAT *top= (FLOAT*)malloc(SIDE * SIDE * dsize);
 	memset(top, 0, SIDE * SIDE * dsize);
 
-	CalculateVz(top, grid, result);
+	if (!CalculateVz(top, grid, result))
+		return 1;
 
 	printf("%f\n", result[(SIDE / 2) * SIDE + SIDE / 2]);
 	

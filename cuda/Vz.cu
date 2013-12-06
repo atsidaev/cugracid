@@ -79,6 +79,7 @@ extern "C" {
 
 int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
+	int returnCode = 1;
 	FLOAT *sync= (FLOAT*)malloc(LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
 	memset(sync, 0, LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
 
@@ -102,7 +103,11 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	}
 	cudaDeviceSynchronize();
 	cudaError_t error = cudaGetLastError();
-	printf("Error: %s\n", cudaGetErrorString(error));
+	if (error != cudaSuccess)
+	{
+		printf("Error: %s\n", cudaGetErrorString(error));
+		returnCode = 0;
+	}
 	
 	cudaMemcpy(result, resultd, SIDE * SIDE * dsize, cudaMemcpyDeviceToHost);
 	cudaFree(resultd);
@@ -110,7 +115,7 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	cudaFree(bottomd);
 	cudaFree(syncd);
 	
-	return 1;
+	return returnCode;
 }
 
 }
