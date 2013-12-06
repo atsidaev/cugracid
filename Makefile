@@ -1,7 +1,8 @@
+CC=mpicc
 NVCC=nvcc
-NVCFLAGS=-c -arch=sm_21
+NVCFLAGS=-arch=sm_21
 
-LDFLAGS=-L/opt/cuda/lib64 -lcudart
+LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 
 all:	v3
 
@@ -11,4 +12,4 @@ clean:
 v3:	v3.o
 
 %.o:	%.cu
-	$(NVCC) $(NVCFLAGS) $^ -o $@
+	$(NVCC) -c $(NVCFLAGS) $^ -o $@
