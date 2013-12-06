@@ -7,9 +7,9 @@ LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 all:	v3
 
 clean:
-	rm *.o
+	find -name '*.o' | xargs rm
 
-v3:	v3.o
+v3:	v3.o cuda/info.o cuda/Vz.o
 
 %.o:	%.cu
 	$(NVCC) -c $(NVCFLAGS) $^ -o $@
