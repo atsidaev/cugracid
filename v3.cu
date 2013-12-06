@@ -11,6 +11,8 @@ const int dsize = sizeof(FLOAT);
 
 #include "fund.c"
 
+#define LINES_PER_BLOCK 2
+
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 {
@@ -45,6 +47,8 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 __global__
 void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result, FLOAT* sync)
 {
+	yLine += threadIdx.y;
+
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
 	
@@ -64,13 +68,13 @@ void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT*
 	
 	//atomicAdd(&result[pos_result], r);
 	//result[pos_result] += r;
-	sync[pos_result * SIDE + threadIdx.x] = r;
+	sync[pos_result * LINES_PER_BLOCK * SIDE + threadIdx.y*SIDE + threadIdx.x] = r;
 	FLOAT res = result[pos_result];
 	__syncthreads();
 	if (threadIdx.x)
 		return;
 
-	for (int i = 0, p = pos_result * SIDE; i < SIDE; i++, p++)
+	for (int i = 0, p = pos_result * LINES_PER_BLOCK * SIDE; i < LINES_PER_BLOCK * SIDE; i++, p++)
 		res += sync[p];
 	result[pos_result] = res;
 	// atomicAdd(&result[pos_result], r);
@@ -94,27 +98,27 @@ int main()
 	FLOAT *result = (FLOAT*)malloc(SIDE * SIDE * dsize);
 	memset(result, 0, SIDE * SIDE * dsize);
 
-	FLOAT *sync= (FLOAT*)malloc(SIDE * SIDE * SIDE * dsize);
-	memset(sync, 0, SIDE * SIDE * SIDE * dsize);
+	FLOAT *sync= (FLOAT*)malloc(LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
+	memset(sync, 0, LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
 
 	FLOAT *resultd, *bottomd, *topd, *syncd;
 	cudaMalloc((void**)&resultd, SIDE * SIDE * dsize);
 	cudaMalloc((void**)&bottomd, SIDE * SIDE * dsize);
 	cudaMalloc((void**)&topd, SIDE * SIDE * dsize);
-	cudaMalloc((void**)&syncd, SIDE * SIDE * SIDE * dsize);
+	cudaMalloc((void**)&syncd, LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
 
 	cudaMemcpy(topd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
 	cudaMemcpy(resultd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
 	cudaMemcpy(bottomd, grid, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
 	
 	dim3 blocks(SIDE, SIDE);
-	dim3 threads(SIDE);
+	dim3 threads(SIDE, LINES_PER_BLOCK);
 	
 	//Vz3<<<blocks,threads>>>(0, 0, -100000000, 100000000, -100000000, 100000000, 1, 0, 0, result);
 	//V<<<1,1>>>(result);
-	for (int i = 0; i < SIDE; i++)
+	for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK)
 	{
-		cudaMemset(syncd, 0, SIDE * SIDE * SIDE * dsize);
+		cudaMemset(syncd, 0, LINES_PER_BLOCK * SIDE * SIDE * SIDE * dsize);
 		Calculate<<<blocks,threads>>>(i, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd, bottomd, resultd, syncd);
 	}
 	cudaDeviceSynchronize();
