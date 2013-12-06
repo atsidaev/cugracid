@@ -7,7 +7,8 @@ LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 all:	v3
 
 clean:
-	find -name '*.o' | xargs rm
+	find -name '*.o' -delete
+	rm v3
 
 v3:	v3.o cuda/info.o cuda/Vz.o
 
