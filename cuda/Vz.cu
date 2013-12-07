@@ -6,8 +6,7 @@
 
 #include "../global.h"
 
-#define LINES_PER_BLOCK 1
-#define THREAD_COUNT (SIDE / 256)
+#define THREAD_COUNT (SIDE)
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -110,12 +109,12 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 
 	for (int x = 0; x < SIDE; x += THREAD_COUNT)
 	{
-		for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK * deviceCount)
+		for (int i = 0; i < SIDE; i += deviceCount)
 		{
 			for (int dev = 0; dev < deviceCount; dev++)
 			{
 				cudaSetDevice(dev);
-				Calculate<<<blocks,threads>>>(x, i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+				Calculate<<<blocks,threads>>>(x, i + dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
 			}
 		}
 	}
