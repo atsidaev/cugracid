@@ -7,7 +7,7 @@
 #include "../global.h"
 
 #define LINES_PER_BLOCK 1
-#define THREAD_COUNT (SIDE / 16)
+#define THREAD_COUNT (SIDE / 256)
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
