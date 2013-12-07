@@ -7,6 +7,7 @@
 #include "../global.h"
 
 #define LINES_PER_BLOCK 1
+#define THREAD_COUNT (SIDE / 16)
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -42,10 +43,10 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 __global__
 void Calculate(int xMin, int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
-	__shared__ FLOAT sync[SIDE * LINES_PER_BLOCK];
+	__shared__ FLOAT sync[THREAD_COUNT];
 	
-	int xPos = xMin + threadIdx.x % (SIDE - xMin);
-	int yPos = yLine + threadIdx.x / (SIDE - xMin);
+	int xPos = xMin + threadIdx.x;// % (SIDE - xMin);
+	int yPos = yLine;// + threadIdx.x / (SIDE - xMin);
 	
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
@@ -70,7 +71,7 @@ void Calculate(int xMin, int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT ySt
 	if (threadIdx.x)
 		return;
 
-	for (int i = 0; i < LINES_PER_BLOCK * SIDE; i++)
+	for (int i = 0; i < THREAD_COUNT; i++)
 		res += sync[i];
 	result[pos_result] = res;
 }
@@ -105,14 +106,17 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	}
 
 	dim3 blocks(SIDE, SIDE);
-	dim3 threads(LINES_PER_BLOCK * SIDE);
+	dim3 threads(THREAD_COUNT);
 
-	for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK * deviceCount)
+	for (int x = 0; x < SIDE; x += THREAD_COUNT)
 	{
-		for (int dev = 0; dev < deviceCount; dev++)
+		for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK * deviceCount)
 		{
-			cudaSetDevice(dev);
-			Calculate<<<blocks,threads>>>(0, i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+			for (int dev = 0; dev < deviceCount; dev++)
+			{
+				cudaSetDevice(dev);
+				Calculate<<<blocks,threads>>>(x, i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+			}
 		}
 	}
 	
