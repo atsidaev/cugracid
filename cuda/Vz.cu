@@ -42,7 +42,7 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 __global__
 void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
-	__shared__ FLOAT s[SIDE * LINES_PER_BLOCK];
+	__shared__ FLOAT sync[SIDE * LINES_PER_BLOCK];
 	
 	yLine += threadIdx.y;
 
@@ -63,14 +63,14 @@ void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT*
 	
 	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
 	
-	s[threadIdx.x + SIDE*threadIdx.y] = r;
+	sync[threadIdx.x + SIDE*threadIdx.y] = r;
 	FLOAT res = result[pos_result];
 	__syncthreads();
 	if (threadIdx.x)
 		return;
 
 	for (int i = 0; i < LINES_PER_BLOCK * SIDE; i++)
-		res += s[i];
+		res += sync[i];
 	result[pos_result] = res;
 }
 
@@ -83,39 +83,59 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices, ", deviceCount);
-	// We need to get so many devices to split data to equal-sized portions
+	// We need to get so many devices as we can to split data to equal-sized portions
 	while (SIDE % deviceCount != 0)
 		deviceCount--;
 	printf("using %d of them\n", deviceCount);
 	
-	FLOAT *resultd, *bottomd, *topd;
-	cudaMalloc((void**)&resultd, SIDE * SIDE * dsize);
-	cudaMalloc((void**)&bottomd, SIDE * SIDE * dsize);
-	cudaMalloc((void**)&topd, SIDE * SIDE * dsize);
+	memset(result, 0, SIDE * SIDE * dsize);
 	
-	cudaMemcpy(topd, top, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
-	cudaMemcpy(bottomd, bottom, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);	
-	cudaMemcpy(resultd, result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	FLOAT *resultd[deviceCount], *bottomd[deviceCount], *topd[deviceCount];
+	for (int dev = 0; dev < deviceCount; dev++)
+	{
+		cudaSetDevice(dev);
+		cudaMalloc((void**)&resultd[dev], SIDE * SIDE * dsize);
+		cudaMalloc((void**)&bottomd[dev], SIDE * SIDE * dsize);
+		cudaMalloc((void**)&topd[dev], SIDE * SIDE * dsize);
+
+		cudaMemcpy(topd[dev], top, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+		cudaMemcpy(bottomd[dev], bottom, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+		cudaMemcpy(resultd[dev], result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+	}
 
 	dim3 blocks(SIDE, SIDE);
 	dim3 threads(SIDE, LINES_PER_BLOCK);
 
-	for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK)
-		Calculate<<<blocks,threads>>>(i, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd, bottomd, resultd);
-	
-	cudaDeviceSynchronize();
-	cudaError_t error = cudaGetLastError();
-	if (error != cudaSuccess)
+	for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK * deviceCount)
 	{
-		printf("Error: %s\n", cudaGetErrorString(error));
-		returnCode = 0;
+		for (int dev = 0; dev < deviceCount; dev++)
+		{
+			cudaSetDevice(dev);
+			Calculate<<<blocks,threads>>>(i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+		}
 	}
 	
-	cudaMemcpy(result, resultd, SIDE * SIDE * dsize, cudaMemcpyDeviceToHost);
-	cudaFree(resultd);
-	cudaFree(topd);
-	cudaFree(bottomd);
+	FLOAT* result_tmp;
+	cudaHostAlloc((void**)&result_tmp, SIDE * SIDE * dsize, cudaHostAllocDefault);
 	
+	for (int dev = 0; dev < deviceCount; dev++)
+	{
+		cudaSetDevice(dev);
+		cudaDeviceSynchronize();
+		cudaError_t error = cudaGetLastError();
+		if (error != cudaSuccess)
+		{
+			printf("Error: %s\n", cudaGetErrorString(error));
+			returnCode = 0;
+		}
+	
+		cudaMemcpy(result_tmp, resultd[dev], SIDE * SIDE * dsize, cudaMemcpyDeviceToHost);
+		for (int i = 0; i < SIDE * SIDE; i++)
+			result[i] += result_tmp[i];
+		cudaFree(resultd[dev]);
+		cudaFree(topd[dev]);
+		cudaFree(bottomd[dev]);
+	}
 	return returnCode;
 }
 
