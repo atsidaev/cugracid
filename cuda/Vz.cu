@@ -40,22 +40,23 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 }
 
 __global__
-void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
+void Calculate(int xMin, int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
 	__shared__ FLOAT sync[SIDE * LINES_PER_BLOCK];
 	
-	yLine += threadIdx.y;
-
+	int xPos = xMin + threadIdx.x % (SIDE - xMin);
+	int yPos = yLine + threadIdx.x / (SIDE - xMin);
+	
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
 	
-	FLOAT x1 = xLL + xStep * threadIdx.x;
+	FLOAT x1 = xLL + xStep * xPos;
 	FLOAT x2 = x1 + xStep;
 	
-	FLOAT y1 = yLL + yStep * yLine;
+	FLOAT y1 = yLL + yStep * yPos;
 	FLOAT y2 = y1 + yStep;
 	
-	int pos_grid = threadIdx.x + yLine * SIDE;
+	int pos_grid = xPos + yPos * SIDE;
 	FLOAT t = 40.326; //top[pos_grid];
 	FLOAT b = bottom[pos_grid];
 	
@@ -63,7 +64,7 @@ void Calculate(int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT*
 	
 	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
 	
-	sync[threadIdx.x + SIDE*threadIdx.y] = r;
+	sync[threadIdx.x] = r;
 	FLOAT res = result[pos_result];
 	__syncthreads();
 	if (threadIdx.x)
@@ -104,14 +105,14 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	}
 
 	dim3 blocks(SIDE, SIDE);
-	dim3 threads(SIDE, LINES_PER_BLOCK);
+	dim3 threads(LINES_PER_BLOCK * SIDE);
 
 	for (int i = 0; i < SIDE; i+=LINES_PER_BLOCK * deviceCount)
 	{
 		for (int dev = 0; dev < deviceCount; dev++)
 		{
 			cudaSetDevice(dev);
-			Calculate<<<blocks,threads>>>(i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+			Calculate<<<blocks,threads>>>(0, i + LINES_PER_BLOCK * dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
 		}
 	}
 	
