@@ -30,16 +30,16 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	
-	FLOAT *result = new FLOAT[SIDE * SIDE];
-	memset(result, 0, SIDE * SIDE * dsize);
+	FLOAT *result = new FLOAT[g.nCol * g.nRow];
+	memset(result, 0, g.nCol * g.nRow * dsize);
 
-	FLOAT *top = new FLOAT[SIDE * SIDE];
-	memset(top, 0, SIDE * SIDE * dsize);
+	FLOAT *top = new FLOAT[g.nCol * g.nRow];
+	memset(top, 0, g.nCol * g.nRow * dsize);
 
-	if (!CalculateVz(top, g.data, result))
+	if (!CalculateVz(top, g.data, result, g.nCol, g.nRow))
 		return 1;
 
-	printf("%f\n", result[(SIDE / 2) * SIDE + SIDE / 2]);
+	printf("%f\n", result[(g.nRow / 2) * g.nCol + g.nCol / 2]);
 	
 	if (outputFilename != NULL)
 	{

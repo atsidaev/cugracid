@@ -6,7 +6,7 @@
 
 #include "../global.h"
 
-#define THREAD_COUNT (SIDE)
+#define THREADS_COUNT 256
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -40,14 +40,14 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 }
 
 __global__
-void Calculate(int first_block_pos, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
+void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
-	__shared__ FLOAT sync[THREAD_COUNT];
+	__shared__ FLOAT sync[THREADS_COUNT];
 	
 	int pos_grid = (first_block_pos + threadIdx.x);
 	
-	int xPos = pos_grid % SIDE;
-	int yPos = pos_grid / SIDE;
+	int xPos = pos_grid % nCol;
+	int yPos = pos_grid / nCol;
 	
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
@@ -61,7 +61,7 @@ void Calculate(int first_block_pos, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT ySt
 	FLOAT t = 40.326; //top[pos_grid];
 	FLOAT b = bottom[pos_grid];
 	
-	int pos_result = blockIdx.x + blockIdx.y * SIDE;
+	int pos_result = blockIdx.x + blockIdx.y * nCol;
 	
 	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
 	
@@ -71,12 +71,12 @@ void Calculate(int first_block_pos, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT ySt
 	if (threadIdx.x)
 		return;
 
-	for (int i = 0; i < THREAD_COUNT; i++)
+	for (int i = 0; i < THREADS_COUNT; i++)
 		res += sync[i];
 	result[pos_result] = res;
 }
 
-int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
+int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow)
 {
 	int returnCode = 1;
 	
@@ -84,42 +84,42 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	cudaGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices, ", deviceCount);
 	// We need to get so many devices as we can to split data to equal-sized portions
-	while (SIDE % deviceCount != 0)
+	while (nRow % deviceCount != 0)
 		deviceCount--;
 	printf("using %d of them\n", deviceCount);
 	if (deviceCount == 0)
 		return 0;
 	
-	memset(result, 0, SIDE * SIDE * dsize);
+	memset(result, 0, nCol * nRow * dsize);
 	
 	FLOAT *resultd[deviceCount], *bottomd[deviceCount], *topd[deviceCount];
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
 		cudaSetDevice(dev);
-		cudaMalloc((void**)&resultd[dev], SIDE * SIDE * dsize);
-		cudaMalloc((void**)&bottomd[dev], SIDE * SIDE * dsize);
-		cudaMalloc((void**)&topd[dev], SIDE * SIDE * dsize);
+		cudaMalloc((void**)&resultd[dev], nCol * nRow * dsize);
+		cudaMalloc((void**)&bottomd[dev], nCol * nRow * dsize);
+		cudaMalloc((void**)&topd[dev], nCol * nRow * dsize);
 
-		cudaMemcpy(topd[dev], top, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
-		cudaMemcpy(bottomd[dev], bottom, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
-		cudaMemcpy(resultd[dev], result, SIDE * SIDE * dsize, cudaMemcpyHostToDevice);
+		cudaMemcpy(topd[dev], top, nCol * nRow * dsize, cudaMemcpyHostToDevice);
+		cudaMemcpy(bottomd[dev], bottom, nCol * nRow * dsize, cudaMemcpyHostToDevice);
+		cudaMemcpy(resultd[dev], result, nCol * nRow * dsize, cudaMemcpyHostToDevice);
 	}
 
-	dim3 blocks(SIDE, SIDE);
-	dim3 threads(THREAD_COUNT);
+	dim3 blocks(nCol, nRow);
+	dim3 threads(THREADS_COUNT);
 
-	for (int pos = 0; pos < SIDE * SIDE;)
+	for (int pos = 0; pos < nCol * nRow;)
 	{
-		for (int dev = 0; dev < deviceCount; dev++, pos += THREAD_COUNT)
+		for (int dev = 0; dev < deviceCount; dev++, pos += THREADS_COUNT)
 		{
 			cudaSetDevice(dev);
-			Calculate<<<blocks,threads>>>(pos, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+			Calculate<<<blocks,threads>>>(pos, nCol, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
 		}
 	}
 
 	
 	FLOAT* result_tmp;
-	cudaHostAlloc((void**)&result_tmp, SIDE * SIDE * dsize, cudaHostAllocDefault);
+	cudaHostAlloc((void**)&result_tmp, nCol * nRow * dsize, cudaHostAllocDefault);
 	
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
@@ -132,8 +132,8 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 			returnCode = 0;
 		}
 	
-		cudaMemcpy(result_tmp, resultd[dev], SIDE * SIDE * dsize, cudaMemcpyDeviceToHost);
-		for (int i = 0; i < SIDE * SIDE; i++)
+		cudaMemcpy(result_tmp, resultd[dev], nCol * nRow * dsize, cudaMemcpyDeviceToHost);
+		for (int i = 0; i < nCol * nRow; i++)
 			result[i] += result_tmp[i];
 		cudaFree(resultd[dev]);
 		cudaFree(topd[dev]);
