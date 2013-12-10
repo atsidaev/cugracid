@@ -40,12 +40,14 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 }
 
 __global__
-void Calculate(int xMin, int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
+void Calculate(int first_block_pos, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
 	__shared__ FLOAT sync[THREAD_COUNT];
 	
-	int xPos = xMin + threadIdx.x;// % (SIDE - xMin);
-	int yPos = yLine;// + threadIdx.x / (SIDE - xMin);
+	int pos_grid = (first_block_pos + threadIdx.x);
+	
+	int xPos = pos_grid % SIDE;
+	int yPos = pos_grid / SIDE;
 	
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
@@ -55,8 +57,7 @@ void Calculate(int xMin, int yLine, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT ySt
 	
 	FLOAT y1 = yLL + yStep * yPos;
 	FLOAT y2 = y1 + yStep;
-	
-	int pos_grid = xPos + yPos * SIDE;
+
 	FLOAT t = 40.326; //top[pos_grid];
 	FLOAT b = bottom[pos_grid];
 	
@@ -107,17 +108,15 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	dim3 blocks(SIDE, SIDE);
 	dim3 threads(THREAD_COUNT);
 
-	for (int x = 0; x < SIDE; x += THREAD_COUNT)
+	for (int pos = 0; pos < SIDE * SIDE;)
 	{
-		for (int i = 0; i < SIDE; i += deviceCount)
+		for (int dev = 0; dev < deviceCount; dev++, pos += THREAD_COUNT)
 		{
-			for (int dev = 0; dev < deviceCount; dev++)
-			{
-				cudaSetDevice(dev);
-				Calculate<<<blocks,threads>>>(x, i + dev, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
-			}
+			cudaSetDevice(dev);
+			Calculate<<<blocks,threads>>>(pos, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
 		}
 	}
+
 	
 	FLOAT* result_tmp;
 	cudaHostAlloc((void**)&result_tmp, SIDE * SIDE * dsize, cudaHostAllocDefault);
