@@ -12,6 +12,10 @@ class Grid
 private:
 	__int32 ReadInt32(ifstream* fs);
 	double ReadDouble(ifstream* fs);
+	void WriteInt32(ofstream* fs, __int32 value);
+	void WriteDouble(ofstream* fs, double value);
+
+
 	bool Init();
 
 public:
@@ -32,4 +36,5 @@ public:
 	Grid(const char* fileName);
 
 	bool Read(const char* fileName);
+	bool Write(const char* fileName);
 };

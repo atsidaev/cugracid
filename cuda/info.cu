@@ -3,8 +3,6 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-extern "C" {
-
 void cudaPrintInfo()
 {
 	int deviceCount;
@@ -21,4 +19,3 @@ void cudaPrintInfo()
 	printf("Registers per block: %d\n", props.regsPerBlock);
 }
 
-}

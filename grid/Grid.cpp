@@ -14,6 +14,16 @@ double Grid::ReadDouble(ifstream* fs)
 	return result;
 }
 
+void Grid::WriteInt32(ofstream* fs, __int32 value)
+{
+	fs->write(reinterpret_cast<char*>(&value), sizeof value);
+}
+
+void Grid::WriteDouble(ofstream* fs, double value)
+{
+	fs->write(reinterpret_cast<char*>(&value), sizeof value);
+}
+
 bool Grid::Init()
 {
 	data = NULL;
@@ -73,10 +83,7 @@ bool Grid::Read(const char* fileName)
 		if (ID == 0x41544144)	// data
 		{
 			int Size = ReadInt32(&ifs);
-			for (int i = 0; i < nRow; i++)
-				for (int j = 0; j < nCol; j++)
-					data[i * nCol + j] = ReadDouble(&ifs);
-				
+			ifs.read((char*)data, nCol * nRow * sizeof(double));
 			break;
 		}
 		if (ID == 0x49544c46)	// fault
@@ -87,5 +94,35 @@ bool Grid::Read(const char* fileName)
 	}
 
 	ifs.close();
+	return true;
+}
+
+bool Grid::Write(const char* fileName)
+{
+	ofstream ofs(fileName, ios::binary | ios::out);
+	
+	WriteInt32(&ofs, 0x42525344); // header DSRB
+	WriteInt32(&ofs, sizeof(__int32));
+	WriteInt32(&ofs, 2); // Version
+	
+	WriteInt32(&ofs, 0x44495247); // grid GRID
+	WriteInt32(&ofs, 2 * sizeof(__int32) + 8 * sizeof(double));
+
+	WriteInt32(&ofs, nRow);
+	WriteInt32(&ofs, nCol);
+	WriteDouble(&ofs, xLL);
+	WriteDouble(&ofs, yLL);
+	WriteDouble(&ofs, xSize);
+	WriteDouble(&ofs, ySize);
+	WriteDouble(&ofs, zMin);
+	WriteDouble(&ofs, zMax);
+	WriteDouble(&ofs, Rotation);
+	WriteDouble(&ofs, BlankValue);
+
+	WriteInt32(&ofs, 0x41544144); // data
+	__int32 size = nCol * nRow * sizeof(double);
+	WriteInt32(&ofs, size);
+	ofs.write((char*)data, size);
+	
 	return true;
 }

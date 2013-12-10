@@ -76,8 +76,6 @@ void Calculate(int first_block_pos, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT ySt
 	result[pos_result] = res;
 }
 
-extern "C" { 
-
 int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
 	int returnCode = 1;
@@ -89,6 +87,8 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 	while (SIDE % deviceCount != 0)
 		deviceCount--;
 	printf("using %d of them\n", deviceCount);
+	if (deviceCount == 0)
+		return 0;
 	
 	memset(result, 0, SIDE * SIDE * dsize);
 	
@@ -140,6 +140,4 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result)
 		cudaFree(bottomd[dev]);
 	}
 	return returnCode;
-}
-
 }
