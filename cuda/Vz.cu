@@ -6,7 +6,7 @@
 
 #include "../global.h"
 
-#define THREADS_COUNT 256
+#define THREADS_COUNT 128
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -76,7 +76,7 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	result[pos_result] = res;
 }
 
-int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow)
+int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount)
 {
 	int returnCode = 1;
 	
@@ -108,7 +108,7 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow)
 	dim3 blocks(nCol, nRow);
 	dim3 threads(THREADS_COUNT);
 
-	for (int pos = 0; pos < nCol * nRow;)
+	for (int pos = firstRowToCalculate * nCol; pos < (firstRowToCalculate + rowsToCalculateCount) * nCol;)
 	{
 		for (int dev = 0; dev < deviceCount; dev++, pos += THREADS_COUNT)
 		{

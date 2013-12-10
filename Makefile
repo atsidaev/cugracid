@@ -1,4 +1,5 @@
 CC=mpicc
+CXX=mpic++
 NVCC=nvcc
 NVCFLAGS=-arch=sm_21
 
