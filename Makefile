@@ -10,7 +10,7 @@ clean:
 	find -name '*.o' -delete
 	rm v3
 
-v3:	v3.o cuda/info.o cuda/Vz.o grid/Grid.o grid/grid.o
+v3:	v3.o cuda/info.o cuda/Vz.o grid/Grid.o
 
 %.o:	%.cu
 	$(NVCC) -c $(NVCFLAGS) $^ -o $@
