@@ -1,6 +1,7 @@
 #include <cstring>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include <mpi.h>
@@ -21,15 +22,17 @@ int main(int argc, char** argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);        /* get number of processes */
 
 	cudaPrintInfo();
-	if (argc < 2)
+	if (argc < 3)
 	{
-		printf("Usage: v3 <filename.grd> <output.grd>\n");
+		printf("Usage: v3 <filename.grd> <density> [output.grd]\n");
 		return 1;
 	}
 	char* filename = argv[1];
+	double dsigma = atof(argv[2]);
 	char* outputFilename = NULL;
-	if (argc > 2)
-		outputFilename = argv[2];
+	if (argc > 3)
+		outputFilename = argv[3];
+
 	Grid g(filename);
 
 	printf("Grid read: %d x %d\n", g.nRow, g.nCol);
@@ -65,7 +68,9 @@ int main(int argc, char** argv)
 	}
 
 	FLOAT *top = new FLOAT[grid_length];
-	memset(top, 0, grid_length * dsize);
+	double assimptota = g.get_Average();
+	for (int i = 0; i < grid_length; i++)
+		top[i] = assimptota;
 
 	if (!CalculateVz(top, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion))
 	{
@@ -89,6 +94,9 @@ int main(int argc, char** argv)
 			for (int j = 0; j < grid_length; j++)
 				result[j] += result[i * grid_length + j];
 		}
+
+		for (int j = 0; j < grid_length; j++)
+			result[j] *= dsigma;
 		
 		printf("%f\n", result[(g.nRow / 2) * g.nCol + g.nCol / 2]);
 	

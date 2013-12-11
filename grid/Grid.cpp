@@ -126,3 +126,17 @@ bool Grid::Write(const char* fileName)
 	
 	return true;
 }
+
+double Grid::get_Average()
+{
+	int count = 0;
+	double sum = 0;
+	for (int i = 0; i < nCol * nRow; i++)
+		if (data[i] != BlankValue)
+		{
+			count++;
+			sum += data[i];
+		}
+	
+	return sum / count;
+}

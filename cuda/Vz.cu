@@ -58,7 +58,7 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	FLOAT y1 = yLL + yStep * yPos;
 	FLOAT y2 = y1 + yStep;
 
-	FLOAT t = 40.326; //top[pos_grid];
+	FLOAT t = top[pos_grid];
 	FLOAT b = bottom[pos_grid];
 	
 	int pos_result = blockIdx.x + blockIdx.y * nCol;
