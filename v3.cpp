@@ -69,7 +69,6 @@ int main(int argc, char** argv)
 
 	FLOAT *top = new FLOAT[grid_length];
 	double assimptota = g.get_Average();
-	printf("Using assimptota %f\n", assimptota);
 	for (int i = 0; i < grid_length; i++)
 		top[i] = assimptota;
 
@@ -96,10 +95,10 @@ int main(int argc, char** argv)
 				result[j] += result[i * grid_length + j];
 		}
 
-		/*for (int j = 0; j < grid_length; j++)
-			result[j] *= dsigma;*/
+		for (int j = 0; j < grid_length; j++)
+			result[j] *= dsigma;
 		
-		printf("%f\n", result[0]);
+		printf("%f\n", result[(g.nRow / 2) * g.nCol + g.nCol / 2]);
 	
 		if (outputFilename != NULL)
 		{

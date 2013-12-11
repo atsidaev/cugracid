@@ -8,7 +8,7 @@
 
 #define THREADS_COUNT 128
 
-//__device__
+__device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 {
 	FLOAT x_dif = (xi - x);
@@ -27,28 +27,21 @@ FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 		(z_dif1 == 0 ? 0 : z_dif1 * atan(x_dif * y_dif / (z_dif1 * R1))));
 }
 
-//__device__
+__device__
 FLOAT Vz2(FLOAT x, FLOAT y, FLOAT xi, FLOAT y1, FLOAT y2, FLOAT z1, FLOAT z2, FLOAT H)
 {
 	return Vz1(x, y, xi, y2, z1, z2, H) - Vz1(x, y, xi, y1, z1, z2, H);
 }
 
-//__device__
+__device__
 FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FLOAT z2, FLOAT H)
 {
 	return Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
 }
 
-/*__global__
+__global__
 void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
-	result[0] = Vz3(10017.37644831728,6395.193574,10004.983501937942,10029.769394696617,
-		6378.67213757647,
-		6411.71501042353,
-		4.1035998909080194,
-		4.1084107773523426,0);
-	return;
-
 	__shared__ FLOAT sync[THREADS_COUNT];
 	
 	int pos_grid = (first_block_pos + threadIdx.x);
@@ -59,10 +52,10 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	FLOAT x = xLL + xStep * blockIdx.x;
 	FLOAT y = yLL + yStep * blockIdx.y;
 	
-	FLOAT x1 = xLL + xStep * xPos - xStep / 2;
+	FLOAT x1 = xLL + xStep * xPos;
 	FLOAT x2 = x1 + xStep;
 	
-	FLOAT y1 = yLL + yStep * yPos - yStep / 2;
+	FLOAT y1 = yLL + yStep * yPos;
 	FLOAT y2 = y1 + yStep;
 
 	FLOAT t = top[pos_grid];
@@ -81,19 +74,10 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	for (int i = 0; i < THREADS_COUNT; i++)
 		res += sync[i];
 	result[pos_result] = res;
-}*/
+}
 
 int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount)
 {
-	result[0] = Vz3(10017.37644831728,6395.193574,10004.983501937942,10029.769394696617,
-	6378.67213757647,
-6411.71501042353,
-4.1035998909080194,
-4.1084107773523426,0);
-	return 1;
-/*
-
-
 	int returnCode = 1;
 	
 	int deviceCount;
@@ -121,7 +105,7 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 		cudaMemcpy(resultd[dev], result, nCol * nRow * dsize, cudaMemcpyHostToDevice);
 	}
 
-	dim3 blocks(1, 1);
+	dim3 blocks(nCol, nRow);
 	dim3 threads(THREADS_COUNT);
 
 	for (int pos = firstRowToCalculate * nCol; pos < (firstRowToCalculate + rowsToCalculateCount) * nCol;)
@@ -155,5 +139,5 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 		cudaFree(topd[dev]);
 		cudaFree(bottomd[dev]);
 	}
-	return returnCode;*/
+	return returnCode;
 }
