@@ -1,3 +1,5 @@
+#include <float.h>
+
 #include "Grid.h"
 
 __int32 Grid::ReadInt32(ifstream* fs)
@@ -139,4 +141,22 @@ double Grid::get_Average()
 		}
 	
 	return sum / count;
+}
+
+double Grid::get_Min()
+{
+	double min = DBL_MAX;
+	for (int i = 0; i < nCol * nRow; i++)
+		if (data[i] < min)
+			min = data[i];
+	return min;
+}
+
+double Grid::get_Max()
+{
+	double max = DBL_MIN;
+	for (int i = 0; i < nCol * nRow; i++)
+		if (data[i] > max)
+			max = data[i];
+	return max;
 }

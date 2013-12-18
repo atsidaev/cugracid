@@ -103,6 +103,8 @@ int main(int argc, char** argv)
 		if (outputFilename != NULL)
 		{
 			g.data = result;
+			g.zMin = g.get_Min();
+			g.zMax = g.get_Max();
 			g.Write(outputFilename);
 		}
 	}

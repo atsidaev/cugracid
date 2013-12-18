@@ -36,6 +36,8 @@ public:
 	Grid(const char* fileName);
 
 	double get_Average();
+	double get_Min();
+	double get_Max();
 
 	bool Read(const char* fileName);
 	bool Write(const char* fileName);
