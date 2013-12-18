@@ -13,6 +13,8 @@
 
 #include "grid/Grid.h"
 
+const double GRAVITY_CONST = 6.67384; // CODATA
+
 int main(int argc, char** argv)
 {
 	int mpi_rank, mpi_size;
@@ -96,7 +98,7 @@ int main(int argc, char** argv)
 		}
 
 		for (int j = 0; j < grid_length; j++)
-			result[j] *= dsigma;
+			result[j] *= GRAVITY_CONST * dsigma;
 		
 		printf("%f\n", result[(g.nRow / 2) * g.nCol + g.nCol / 2]);
 	
