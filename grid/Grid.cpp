@@ -121,6 +121,10 @@ bool Grid::Write(const char* fileName)
 	WriteDouble(&ofs, Rotation);
 	WriteDouble(&ofs, BlankValue);
 
+	for (int i = 0; i < nCol * nRow; i++)
+		if (isinf(data[i]))
+			data[i] = BlankValue;
+
 	WriteInt32(&ofs, 0x41544144); // data
 	__int32 size = nCol * nRow * sizeof(double);
 	WriteInt32(&ofs, size);
@@ -147,7 +151,7 @@ double Grid::get_Min()
 {
 	double min = DBL_MAX;
 	for (int i = 0; i < nCol * nRow; i++)
-		if (data[i] < min)
+		if (data[i] < min && !isinf(data[i]))
 			min = data[i];
 	return min;
 }
@@ -156,7 +160,7 @@ double Grid::get_Max()
 {
 	double max = DBL_MIN;
 	for (int i = 0; i < nCol * nRow; i++)
-		if (data[i] > max)
+		if (data[i] > max && !isinf(data[i]))
 			max = data[i];
 	return max;
 }

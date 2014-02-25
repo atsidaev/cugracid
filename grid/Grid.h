@@ -5,6 +5,8 @@
 #include <fstream>
 using namespace std;
 
+#include <math.h>
+
 #define __int32 int32_t
 
 class Grid
