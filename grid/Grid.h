@@ -37,6 +37,8 @@ public:
 	Grid();
 	Grid(const char* fileName);
 
+	static Grid& GenerateEmptyGrid(Grid& grid);
+
 	double get_Average();
 	double get_Min();
 	double get_Max();

@@ -46,6 +46,24 @@ Grid::Grid()
 	Init();
 }
 
+Grid& Grid::GenerateEmptyGrid(Grid& g)
+{
+	Grid* result = new Grid();
+	result->data = NULL;
+	result->nRow = g.nRow;
+	result->nCol = g.nCol;
+	result->xLL = g.xLL;
+	result->yLL = g.yLL;
+	result->xSize = g.xSize;
+	result->ySize = g.ySize;
+	result->zMin = g.zMin;
+	result->zMax = g.zMax;
+	result->Rotation = g.Rotation;
+	result->BlankValue = g.BlankValue;
+
+	return *result;
+}
+
 Grid::Grid(const char* fileName)
 {
 	Read(fileName);

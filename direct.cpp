@@ -15,7 +15,7 @@
 
 const double GRAVITY_CONST = 6.67384; // CODATA
 
-FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)
+FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, int mpi_size)
 {
 	int mpi_rows_portion = g.nRow / mpi_size;
 	printf("Every MPI thread will process %d rows\n", mpi_rows_portion);
@@ -33,13 +33,9 @@ FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size
 		result = new FLOAT[grid_length];
 		memset(result, 0, grid_length * dsize);
 	}
+	
 
-	FLOAT *top = new FLOAT[grid_length];
-	double assimptota = g.get_Average();
-	for (int i = 0; i < grid_length; i++)
-		top[i] = assimptota;
-
-	if (!CalculateVz(top, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion))
+	if (!CalculateVz(top.data, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion))
 	{
 		MPI_Abort(MPI_COMM_WORLD, 0);
 		return NULL;
@@ -71,4 +67,20 @@ FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size
 	}
 	
 	return NULL;
+
+}
+
+FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)
+{
+	int grid_length = g.nCol * g.nRow;
+
+	Grid g2 = Grid::GenerateEmptyGrid(g);
+	FLOAT *top = new FLOAT[grid_length];
+	double assimptota = g.get_Average();
+	for (int i = 0; i < grid_length; i++)
+		top[i] = assimptota;
+
+	g2.data = top;
+
+	return CalculateDirectProblem(g, g2, dsigma, mpi_rank, mpi_size);
 }
