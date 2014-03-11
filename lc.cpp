@@ -48,12 +48,14 @@ int main(int argc, char** argv)
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
+		FLOAT* result = CalculateDirectProblem(boundary, modelBoundary, dsigma, mpi_rank, mpi_size);
+
+		printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 
 		if (mpi_rank == MPI_MASTER)
 		{
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
-				boundary.data[j] /= (1 + alpha * (observedField.data[j] - result[j]));
+				boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
 		
 			delete result;
 		}
