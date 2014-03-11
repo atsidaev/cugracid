@@ -55,7 +55,13 @@ int main(int argc, char** argv)
 		if (mpi_rank == MPI_MASTER)
 		{
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
-				boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
+			{
+				if (boundary.data[i] > 0.5)
+					boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
+				else
+					boundary.data[j] = boundary.data[j] / (2 * M_PI * GRAVITY_CONST * dsigma);
+			}
+				
 		
 			delete result;
 		}

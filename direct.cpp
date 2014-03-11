@@ -13,8 +13,6 @@
 
 #include "grid/Grid.h"
 
-const double GRAVITY_CONST = 6.67384; // CODATA
-
 FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, int mpi_size)
 {
 	int mpi_rows_portion = g.nRow / mpi_size;
