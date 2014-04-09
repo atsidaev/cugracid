@@ -44,30 +44,39 @@ int main(int argc, char** argv)
 	cudaPrintInfo();
 	if (argc < 6)
 	{
-		printf("Usage: lc <field.grd> <boundary.grd> <density> <alpha> <iterations> [output.grd]\n");
+		printf("Usage: lc <field.grd> <asimptota> <density> <alpha> <iterations> [output.grd]\n");
 		return 1;
 	}
 	char* fieldFilename = argv[1];
-	char* boundaryFilename = argv[2];
+	double asimptota = atof(argv[2]);
 	double dsigma = atof(argv[3]);
 	double alpha = atof(argv[4]);
 	double iterations = atoi(argv[5]);
+	
+	/*double topValue = asimptota - 5;
+	if (topValue <= 0)
+		topValue = asimptota + 1;*/
 	
 	char* outputFilename = NULL;
 	if (argc > 6)
 		outputFilename = argv[6];
 
 	Grid observedField(fieldFilename);
-	Grid modelBoundary(boundaryFilename);
-
-	Grid boundary(boundaryFilename);
 	
 	printf("Field grid read\n");
+	
+	Grid boundary(fieldFilename);
+	Grid asimptotaBoundary(fieldFilename);
+	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+	{
+		boundary.data[j] = asimptota;
+		asimptotaBoundary.data[j] = asimptota;
+	}
 	
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, modelBoundary, dsigma, mpi_rank, mpi_size);
+		FLOAT* result = CalculateDirectProblem(boundary, asimptotaBoundary, dsigma, mpi_rank, mpi_size);
 
 		printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 
