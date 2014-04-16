@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 	cudaPrintInfo();
 	if (argc < 6)
 	{
-		printf("Usage: lc <field.grd> <boundary.grd> <density> <alpha> <iterations> [output.grd]\n");
+		printf("Usage: lc <observed_field.grd> <boundary.grd> <density> <alpha> <iterations> [output.grd]\n");
 		return 1;
 	}
 	char* fieldFilename = argv[1];
@@ -59,8 +59,15 @@ int main(int argc, char** argv)
 
 	Grid observedField(fieldFilename);
 	Grid modelBoundary(boundaryFilename);
-
 	Grid boundary(boundaryFilename);
+	
+	printf("Calculating c_function...");
+	
+	FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
+	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+		observedField.data[j] = observedField.data[j] - model_field[j];
+
+	printf("Done!\n");
 	
 	printf("Field grid read\n");
 	
@@ -98,11 +105,11 @@ int main(int argc, char** argv)
 					
 				
 				/* double min =0;
-				double max = 12;
+				double max = 32;
 				if (boundary.data[j] < min)
 					boundary.data[j] = min; 
 				if (boundary.data[j] > max)
-					boundary.data[j] = max;  */
+					boundary.data[j] = max; */
 			}
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
 		
