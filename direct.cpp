@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef USE_MPI
 #include <mpi.h>
-#define MPI_MASTER 0
+#endif
 
 #include "global.h"
 #include "cuda/Vz.h"
@@ -35,21 +36,26 @@ FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, i
 
 	if (!CalculateVz(top.data, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion))
 	{
+#ifdef USE_MPI		
 		MPI_Abort(MPI_COMM_WORLD, 0);
+#endif
 		return NULL;
 	}
 
 	if (mpi_rank != MPI_MASTER)
 	{
+#ifdef USE_MPI		
 		MPI_Send(result, grid_length, MPI_DOUBLE, MPI_MASTER, 0, MPI_COMM_WORLD);
+#endif
 	}
 	else
 	{
+#ifdef USE_MPI		
 		for (int i = 1; i < mpi_size; i++)
 		{
 			MPI_Recv(&result[i * grid_length], grid_length, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		}
-		
+#endif		
 		for (int i = 1; i < mpi_size; i++)
 		{
 			for (int j = 0; j < grid_length; j++)

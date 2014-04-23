@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef USE_MPI
 #include <mpi.h>
+#endif
 
 #include "global.h"
 #include "cuda/Vz.h"
@@ -16,11 +18,13 @@
 
 int main(int argc, char** argv)
 {
-	int mpi_rank, mpi_size;
+	int mpi_rank = 0, mpi_size = 1;
 
+#ifdef USE_MPI
 	MPI_Init (&argc, &argv);      /* starts MPI */
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);        /* get current process id */
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);        /* get number of processes */
+#endif
 
 	cudaPrintInfo();
 	if (argc < 3)
@@ -45,9 +49,10 @@ int main(int argc, char** argv)
 		g.zMax = g.get_Max();
 		g.Write(outputFilename);
 	}
-	
+
+#ifdef USE_MPI
 	MPI_Finalize();
-	
+#endif	
 	return 0;
 }
 
