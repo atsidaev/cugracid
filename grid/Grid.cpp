@@ -71,8 +71,7 @@ Grid::Grid(const char* fileName)
 
 bool Grid::Read(const char* fileName)
 {
-	ifstream ifs(fileName);
-
+	ifstream ifs(fileName, std::ifstream::binary);
 	while (true)
 	{
 		int ID = ReadInt32(&ifs);
