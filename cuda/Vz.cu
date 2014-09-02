@@ -76,7 +76,7 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	result[pos_result] = res;
 }
 
-int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount)
+int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, FLOAT xLL, FLOAT yLL, FLOAT xSize, FLOAT ySize)
 {
 	int returnCode = 1;
 	
@@ -113,7 +113,7 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 		for (int dev = 0; dev < deviceCount; dev++, pos += THREADS_COUNT)
 		{
 			cudaSetDevice(dev);
-			Calculate<<<blocks,threads>>>(pos, nCol, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, topd[dev], bottomd[dev], resultd[dev]);
+			Calculate<<<blocks,threads>>>(pos, nCol, xLL, yLL, xSize, ySize, topd[dev], bottomd[dev], resultd[dev]);
 		}
 	}
 

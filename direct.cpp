@@ -34,7 +34,7 @@ FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, i
 	}
 	
 
-	if (!CalculateVz(top.data, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion))
+	if (!CalculateVz(top.data, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion, g.xLL, g.yLL, g.xSize, g.ySize))
 	{
 #ifdef USE_MPI		
 		MPI_Abort(MPI_COMM_WORLD, 0);
