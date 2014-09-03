@@ -74,17 +74,23 @@ FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, i
 
 }
 
-FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)
+FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, int mpi_rank, int mpi_size)
 {
 	int grid_length = g.nCol * g.nRow;
 
 	Grid g2 = Grid::GenerateEmptyGrid(g);
 	FLOAT *top = new FLOAT[grid_length];
-	double assimptota = g.get_Average();
+
 	for (int i = 0; i < grid_length; i++)
-		top[i] = assimptota;
+		top[i] = asimptota;
 
 	g2.data = top;
 
 	return CalculateDirectProblem(g, g2, dsigma, mpi_rank, mpi_size);
+}
+
+FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)
+{
+	double asimptota = g.get_Average();
+	return CalculateDirectProblem(g, asimptota, dsigma, mpi_rank, mpi_size);
 }
