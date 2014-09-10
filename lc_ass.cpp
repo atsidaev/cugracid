@@ -70,17 +70,11 @@ int main(int argc, char** argv)
 	printf("Field grid read\n");
 	
 	Grid boundary(fieldFilename);
-	Grid asimptotaBoundary(fieldFilename);
-	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
-	{
-		boundary.data[j] = asimptota;
-		asimptotaBoundary.data[j] = asimptota;
-	}
 	
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, asimptotaBoundary, dsigma, mpi_rank, mpi_size);
+		FLOAT* result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
 
 		printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 
@@ -107,8 +101,7 @@ int main(int argc, char** argv)
 					boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 				}
 				else
-					boundary.data[j] = (observedField.data[j] - a * result[j]) / (2 * M_PI * GRAVITY_CONST * dsigma);
-					
+					boundary.data[j] += (observedField.data[j] - a * result[j]) / (-2 * M_PI * GRAVITY_CONST * dsigma);
 				
 				/* double min =0;
 				double max = 12;
@@ -118,7 +111,7 @@ int main(int argc, char** argv)
 					boundary.data[j] = max;  */
 			}
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
-		
+			printf("boudary: %f\n", boundary.data[128 * 256 + 128]);
 			delete result;
 		}
 	
