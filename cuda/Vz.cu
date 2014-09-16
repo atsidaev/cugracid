@@ -49,8 +49,8 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	int xPos = pos_grid % nCol;
 	int yPos = pos_grid / nCol;
 	
-	FLOAT x = xLL + xStep * blockIdx.x;
-	FLOAT y = yLL + yStep * blockIdx.y;
+	FLOAT x = xLL + xStep * blockIdx.x + xStep / 2;
+	FLOAT y = yLL + yStep * blockIdx.y + yStep / 2;
 	
 	FLOAT x1 = xLL + xStep * xPos;
 	FLOAT x2 = x1 + xStep;
