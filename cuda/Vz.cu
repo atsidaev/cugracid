@@ -65,7 +65,7 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	
 	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
 	
-	printf("Field at (%f,%f) for (%f..%f,%f..%f,%f..%f) is %f\n", x,y,x1,x2,y1,y2,t,b,r);
+	// printf("Field at (%f,%f) for (%f..%f,%f..%f,%f..%f) is %f\n", x,y,x1,x2,y1,y2,t,b,r);
 	
 	sync[threadIdx.x] = r;
 	FLOAT res = result[pos_result];
