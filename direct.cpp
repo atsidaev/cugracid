@@ -14,12 +14,12 @@
 
 #include "grid/Grid.h"
 
-FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, int mpi_size)
+FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size)
 {
-	int mpi_rows_portion = g.nRow / mpi_size;
+	int mpi_rows_portion = bottom.nRow / mpi_size;
 	printf("Every MPI thread will process %d rows\n", mpi_rows_portion);
 
-	int grid_length = g.nCol * g.nRow;
+	int grid_length = bottom.nCol * bottom.nRow;
 
 	FLOAT *result;
 	if (mpi_rank == MPI_MASTER)
@@ -34,7 +34,7 @@ FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, i
 	}
 	
 
-	if (!CalculateVz(top.data, g.data, result, g.nCol, g.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion, g.xLL, g.yLL, g.xSize, g.ySize))
+	if (!CalculateVz(top.data, bottom.data, result, bottom.nCol, bottom.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion, bottom.xLL, bottom.yLL, bottom.xSize, bottom.ySize))
 	{
 #ifdef USE_MPI		
 		MPI_Abort(MPI_COMM_WORLD, 0);
@@ -65,7 +65,7 @@ FLOAT* CalculateDirectProblem(Grid& g, Grid& top, double dsigma, int mpi_rank, i
 		for (int j = 0; j < grid_length; j++)
 			result[j] *= GRAVITY_CONST * dsigma;
 		
-		printf("%f\n", result[(g.nRow / 2) * g.nCol + g.nCol / 2]);
+		printf("%f\n", result[(bottom.nRow / 2) * bottom.nCol + bottom.nCol / 2]);
 	
 		return result;
 	}
@@ -86,7 +86,7 @@ FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, int mpi_
 
 	g2.data = top;
 
-	return CalculateDirectProblem(g, g2, dsigma, mpi_rank, mpi_size);
+	return CalculateDirectProblem(g2, g, dsigma, mpi_rank, mpi_size);
 }
 
 FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)

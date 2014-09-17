@@ -6,7 +6,7 @@
 
 #include "../global.h"
 
-#define THREADS_COUNT 128
+#define THREADS_COUNT 2
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
@@ -20,11 +20,11 @@ FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 	FLOAT R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
 
 	return 
-		(nu == y ? 0 : y_dif * log((x_dif + R2) / (x_dif + R1))) + 
-		(xi == x ? 0 : x_dif * log((y_dif + R2) / (y_dif + R1))) -
+		-((nu == y ? 0 : y_dif * log((x_dif + R2) / (x_dif + R1))) + 
+		  (xi == x ? 0 : x_dif * log((y_dif + R2) / (y_dif + R1))) -
 
 		((z_dif2 == 0 ? 0 : z_dif2 * atan(x_dif * y_dif / (z_dif2 * R2))) -
-		(z_dif1 == 0 ? 0 : z_dif1 * atan(x_dif * y_dif / (z_dif1 * R1))));
+		(z_dif1 == 0 ? 0 : z_dif1 * atan(x_dif * y_dif / (z_dif1 * R1)))));
 }
 
 __device__
@@ -64,6 +64,8 @@ void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep,
 	int pos_result = blockIdx.x + blockIdx.y * nCol;
 	
 	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
+	
+	printf("Field at (%f,%f) for (%f..%f,%f..%f,%f..%f) is %f\n", x,y,x1,x2,y1,y2,t,b,r);
 	
 	sync[threadIdx.x] = r;
 	FLOAT res = result[pos_result];
