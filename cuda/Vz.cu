@@ -6,7 +6,7 @@
 
 #include "../global.h"
 
-#define THREADS_COUNT 2
+#define THREADS_COUNT 128
 
 __device__
 FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)

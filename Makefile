@@ -1,5 +1,6 @@
 CC=mpicc
 CXX=mpic++
+CXXFLAGS=-DUSE_MPI
 NVCC=nvcc
 NVCFLAGS=-arch=sm_21
 

@@ -35,6 +35,27 @@ double minimized_function(double alpha)
 	return res;
 }
 
+void gridInfo(Grid& boundary)
+{
+	printf("Grid info: %dx%d, X: %f...%f, Y: %f..%f, xSize: %f, ySize: %f, Min: %f, Max: %f\n", 
+		boundary.nCol, boundary.nRow,
+		boundary.xLL, boundary.xLL + (boundary.nCol - 1) * boundary.xSize,
+		boundary.yLL, boundary.yLL + (boundary.nRow - 1) * boundary.ySize,
+		boundary.xSize, boundary.ySize,
+		boundary.get_Min(), boundary.get_Max());
+}
+
+void put_to_0(double* result, int size)
+{
+		double avg = 0;
+		for (int j = 0; j < size; j++)
+			avg += result[j];
+		avg /= size;
+		
+		for (int j = 0; j < size; j++)
+			result[j] -= avg;
+}
+
 int main(int argc, char** argv)
 {
 	int mpi_rank = 0, mpi_size = 1;
@@ -71,6 +92,8 @@ int main(int argc, char** argv)
 	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 		observedField.data[j] = observedField.data[j] - model_field[j];
 
+	put_to_0(observedField.data, boundary.nCol * boundary.nRow);
+
 	printf("Done!\n");
 	
 	printf("Field grid read\n");
@@ -78,7 +101,12 @@ int main(int argc, char** argv)
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, modelBoundary, dsigma, mpi_rank, mpi_size);
+		gridInfo(boundary);
+		gridInfo(modelBoundary);
+		gridInfo(observedField);
+		FLOAT* result = CalculateDirectProblem(modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
+		
+		put_to_0(result, boundary.nCol * boundary.nRow);
 
 		// printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 
@@ -97,26 +125,26 @@ int main(int argc, char** argv)
 			{
 				sum += abs(observedField.data[j] - result[j]);
 			
-				if (boundary.data[j] > 0.5)
+			//	if (boundary.data[j] > 0.5)
 				{
 					// boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
 					//if (isnan(result[j]))
 					//	printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 					boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 				}
-				else
-					boundary.data[j] = (observedField.data[j] - a * result[j]) / (2 * M_PI * GRAVITY_CONST * dsigma);
+			//	else
+			//		boundary.data[j] = (observedField.data[j] - a * result[j]) / (2 * M_PI * GRAVITY_CONST * dsigma);
 					
 				
-				/* double min =0;
-				double max = 32;
+				/*double min = 4;
+				double max = 26;
 				if (boundary.data[j] < min)
 					boundary.data[j] = min; 
 				if (boundary.data[j] > max)
-					boundary.data[j] = max; */
+					boundary.data[j] = max;*/
 			}
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
-		
+			gridInfo(boundary);
 			delete result;
 		}
 	

@@ -71,12 +71,22 @@ int main(int argc, char** argv)
 	
 	Grid boundary(fieldFilename);
 	
+	Grid asimptotaBoundary(fieldFilename);
+	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+	{
+		boundary.data[j] = asimptota;
+		asimptotaBoundary.data[j] = asimptota;
+	}
+	
+	
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
+		FLOAT* result = CalculateDirectProblem(asimptotaBoundary, boundary, dsigma, mpi_rank, mpi_size);
 
-		printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
+		int center = (boundary.nCol / 2) * boundary.nRow + boundary.nRow / 2;
+
+		printf("Result at 128, 128: %f\n", result[center]);
 
 		if (mpi_rank == MPI_MASTER)
 		{
@@ -93,15 +103,7 @@ int main(int argc, char** argv)
 			{
 				sum += abs(observedField.data[j] - result[j]);
 			
-				if (boundary.data[j] > 0.5)
-				{
-					// boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
-					//if (isnan(result[j]))
-					//	printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-					boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
-				}
-				else
-					boundary.data[j] += (observedField.data[j] - a * result[j]) / (-2 * M_PI * GRAVITY_CONST * dsigma);
+				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 				
 				/* double min =0;
 				double max = 12;
@@ -111,7 +113,7 @@ int main(int argc, char** argv)
 					boundary.data[j] = max;  */
 			}
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
-			printf("boudary: %f\n", boundary.data[128 * 256 + 128]);
+			printf("boudary: %f\n", boundary.data[center]);
 			delete result;
 		}
 	
