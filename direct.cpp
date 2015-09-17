@@ -17,6 +17,9 @@
 FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size)
 {
 	int mpi_rows_portion = bottom.nRow / mpi_size;
+	if (bottom.nRow % mpi_size != 0)
+	    mpi_rows_portion++;
+
 	printf("Every MPI thread will process %d rows\n", mpi_rows_portion);
 
 	int grid_length = bottom.nCol * bottom.nRow;

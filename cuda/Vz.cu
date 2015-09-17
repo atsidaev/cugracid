@@ -40,12 +40,19 @@ FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FL
 }
 
 __global__
-void Calculate(int first_block_pos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
+void Calculate(int first_block_pos, int maximumPos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
 {
 	__shared__ FLOAT sync[THREADS_COUNT];
 	
 	int pos_grid = (first_block_pos + threadIdx.x);
-	
+	if (pos_grid >= maximumPos)
+	{
+		// if we are outside of data which should be calculated by our block
+		// then we need to skip this thread to avoid double calculation of the nodes
+		sync[threadIdx.x] = 0;
+		return;
+	}
+
 	int xPos = pos_grid % nCol;
 	int yPos = pos_grid / nCol;
 	
@@ -85,16 +92,14 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices, ", deviceCount);
-	// We need to get so many devices as we can to split data to equal-sized portions
-	while (nRow % deviceCount != 0)
-		deviceCount--;
-	printf("using %d of them\n", deviceCount);
 	if (deviceCount == 0)
 		return 0;
 	
 	memset(result, 0, nCol * nRow * dsize);
 	
 	FLOAT *resultd[deviceCount], *bottomd[deviceCount], *topd[deviceCount];
+
+	// Setup inbound and outbound arrays for all CUDA devices
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
 		cudaSetDevice(dev);
@@ -110,16 +115,17 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	dim3 blocks(nCol, nRow);
 	dim3 threads(THREADS_COUNT);
 
-	for (int pos = firstRowToCalculate * nCol; pos < (firstRowToCalculate + rowsToCalculateCount) * nCol;)
+	int pos = firstRowToCalculate * nCol;
+	int maximumPos = (firstRowToCalculate + rowsToCalculateCount) * nCol;
+	int currentDevice = 0;
+	while (pos < maximumPos)
 	{
-		for (int dev = 0; dev < deviceCount; dev++, pos += THREADS_COUNT)
-		{
-			cudaSetDevice(dev);
-			Calculate<<<blocks,threads>>>(pos, nCol, xLL, yLL, xSize, ySize, topd[dev], bottomd[dev], resultd[dev]);
-		}
+		cudaSetDevice(currentDevice);
+		Calculate<<<blocks,threads>>>(pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], resultd[currentDevice]);
+		pos += THREADS_COUNT;
+		currentDevice = (currentDevice + 1) % deviceCount;
 	}
 
-	
 	FLOAT* result_tmp;
 	cudaHostAlloc((void**)&result_tmp, nCol * nRow * dsize, cudaHostAllocDefault);
 	
