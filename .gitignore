@@ -1,3 +1,6 @@
 *.grd
 *.o
 v3
+lc
+lc_ass
+recalc
