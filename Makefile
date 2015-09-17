@@ -1,16 +1,16 @@
 CC=mpicc
 CXX=mpic++
-CXXFLAGS=-DUSE_MPI
+CXXFLAGS=-DUSE_MPI -I$(CUDA_INSTALL_PATH)/include
 NVCC=nvcc
 NVCFLAGS=-arch=sm_21
 
-LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart -lOpenCL
 
 all:	v3 lc lc_ass m_to_km recalc
 
 clean:
 	find -name '*.o' -delete
-	rm v3
+	rm v3 lc lc_ass recalc
 
 v3:	v3.o direct.o cuda/info.o cuda/Vz.o grid/Grid.o
 
