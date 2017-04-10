@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 			double a = 1;//golden_section(minimized_function, 0, 20, 30);
 			printf("Calculated alpha: %f\n", a);
 			
-			double sum;
+			double sum = 0;
 			
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
@@ -125,7 +125,9 @@ int main(int argc, char** argv)
 	{
 		boundary.zMin = boundary.get_Min();
 		boundary.zMax = boundary.get_Max();
-		boundary.Write(outputFilename);
+
+		if (outputFilename != NULL)
+			boundary.Write(outputFilename);
 	}
 
 #ifdef USE_MPI	
