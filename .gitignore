@@ -5,3 +5,9 @@ lc
 lc_ass
 recalc
 m_to_km
+/Debug
+/*.opensdf
+/*.sdf
+/*.sln
+/*.suo
+/*.pdb
