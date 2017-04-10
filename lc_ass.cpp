@@ -80,11 +80,10 @@ int main(int argc, char** argv)
 		asimptotaBoundary.data[j] = asimptota;
 	}
 	
-	
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(asimptotaBoundary, boundary, dsigma, mpi_rank, mpi_size);
+		FLOAT* result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
 
 		int center = (boundary.nCol / 2) * boundary.nRow + boundary.nRow / 2;
 
