@@ -18,6 +18,8 @@
 
 #include "golden.h"
 
+#ifdef GEO_BUILD_LC
+
 double* min_g1;
 double* min_g2;
 int min_items;
@@ -164,3 +166,4 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+#endif

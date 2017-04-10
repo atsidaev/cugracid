@@ -15,6 +15,8 @@
 
 #include "recalc_up.h"
 
+#ifdef GEO_BUILD_RECALC
+
 int main(int argc, char** argv)
 {
 	int mpi_rank = 0, mpi_size = 1;
@@ -56,3 +58,4 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+#endif

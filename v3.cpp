@@ -16,6 +16,8 @@
 
 #include "direct.h"
 
+#ifdef GEO_BUILD_V3
+
 int main(int argc, char** argv)
 {
 	int mpi_rank = 0, mpi_size = 1;
@@ -56,3 +58,4 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+#endif

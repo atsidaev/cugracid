@@ -4,6 +4,10 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#ifdef _WIN32
+#include <memory.h>
+#endif
+
 #include "../global.h"
 
 #define THREADS_COUNT 128
@@ -82,7 +86,10 @@ int Recalc(FLOAT* field, FLOAT height, FLOAT* result, int nCol, int nRow, int fi
 	
 	memset(result, 0, nCol * nRow * dsize);
 	
-	FLOAT *fieldd[deviceCount], *resultd[deviceCount];
+	FLOAT **fieldd, **resultd;
+	fieldd = new FLOAT*[deviceCount];
+	resultd = new FLOAT*[deviceCount];
+
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
 		cudaSetDevice(dev);
@@ -126,5 +133,9 @@ int Recalc(FLOAT* field, FLOAT height, FLOAT* result, int nCol, int nRow, int fi
 		cudaFree(resultd[dev]);
 		cudaFree(fieldd[dev]);
 	}
+
+	delete[] fieldd;
+	delete[] resultd;
+
 	return returnCode;
 }

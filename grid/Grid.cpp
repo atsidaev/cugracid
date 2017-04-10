@@ -39,6 +39,8 @@ bool Grid::Init()
 	zMax = 0;
 	Rotation = 0;
 	BlankValue = 0;
+
+	return true;
 }
 
 Grid::Grid()

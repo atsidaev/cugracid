@@ -4,6 +4,10 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#ifdef _WIN32
+#include <memory.h>
+#endif
+
 #include "../global.h"
 
 #define THREADS_COUNT 128
@@ -97,7 +101,10 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	
 	memset(result, 0, nCol * nRow * dsize);
 	
-	FLOAT *resultd[deviceCount], *bottomd[deviceCount], *topd[deviceCount];
+	FLOAT **resultd, **bottomd, **topd;
+	resultd = new FLOAT*[deviceCount];
+	bottomd = new FLOAT*[deviceCount];
+	topd = new FLOAT*[deviceCount];
 
 	// Setup inbound and outbound arrays for all CUDA devices
 	for (int dev = 0; dev < deviceCount; dev++)
@@ -147,5 +154,10 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 		cudaFree(topd[dev]);
 		cudaFree(bottomd[dev]);
 	}
+
+	delete[] resultd;
+	delete[] topd;
+	delete[] bottomd;
+
 	return returnCode;
 }
