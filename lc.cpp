@@ -22,6 +22,9 @@
 
 #ifdef GEO_BUILD_LC
 
+typedef enum { IDT_BOUNDARY, IDT_ASIMPTOTIC_PLANE } initial_data_type_t;
+typedef enum { EC_EPSILON, EC_ITERATIONS_NUMBER } exit_contition_t;
+
 double* min_g1;
 double* min_g2;
 int min_items;
@@ -129,6 +132,9 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+	initial_data_type_t initial_data_type = initialBoundaryFileName == NULL ? IDT_ASIMPTOTIC_PLANE : IDT_BOUNDARY;
+	exit_contition_t exit_condition = isnan(epsilon) ? EC_ITERATIONS_NUMBER : EC_EPSILON;
+
 	int mpi_rank = 0, mpi_size = 1;
 
 #ifdef USE_MPI
@@ -145,7 +151,7 @@ int main(int argc, char** argv)
 
 	// Set boundary to asimptota value or read initial boundary file
 	Grid* modelBoundary = NULL;
-	if (initialBoundaryFileName != NULL)
+	if (initial_data_type == IDT_BOUNDARY)
 	{
 		modelBoundary = &Grid(initialBoundaryFileName);
 		fill_blank(*modelBoundary);
@@ -171,7 +177,7 @@ int main(int argc, char** argv)
 	
 	printf("Field grid read\n");
 	
-	for (int i = 0; i < iterations; i++)
+	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
 		// gridInfo(boundary);
@@ -203,9 +209,16 @@ int main(int argc, char** argv)
 				sum += abs(observedField.data[j] - result[j]);
 				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 			}
-			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
-			gridInfo(boundary);
 			delete result;
+
+			auto deviation = sum / (boundary.nCol * boundary.nRow);
+			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
+			if (exit_condition == EC_EPSILON && deviation < epsilon)
+			{
+				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d\n", epsilon, i);
+				break;
+			}
+			//gridInfo(boundary);
 		}
 	
 	}
