@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	int iterations = 0;
 
 	int c;
-	while ((c = getopt(argc, argv, "f:s:i:a:b:e:n:t:")) != -1)
+	while ((c = getopt(argc, argv, "f:s:b:a:o:e:i:t:")) != -1)
 	{
 		switch (c)
 		{
@@ -84,15 +84,15 @@ int main(int argc, char** argv)
 			fieldFilename = optarg; break;
 		case 's':
 			dsigma = atof(optarg); break;
-		case 'i':
+		case 'b':
 			initialBoundaryFileName = optarg; break;
 		case 'a':
 			alpha = atof(optarg); break;
-		case 'b':
+		case 'o':
 			outputFilename = optarg; break;
 		case 'e':
 			epsilon = atof(optarg); break;
-		case 'n':
+		case 'i':
 			iterations = atoi(optarg); break;
 		case 't':
 			asimptota = atoi(optarg); break;
@@ -108,9 +108,9 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if (iterations == 0 && isnan(epsilon))
+	if (!(iterations == 0 ^ isnan(epsilon)))
 	{
-		fprintf(stderr, "One of arguments -n or -e should be specified\n");
+		fprintf(stderr, "One of arguments -i or -e should be specified\n");
 		return 1;
 	}
 
@@ -126,9 +126,9 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if (isnan(asimptota) && initialBoundaryFileName == NULL)
+	if (!(isnan(asimptota) ^ initialBoundaryFileName == NULL))
 	{
-		fprintf(stderr, "One of arguments -t or -i should be specified\n");
+		fprintf(stderr, "One of arguments -t or -b should be specified\n");
 		return 1;
 	}
 
@@ -199,15 +199,12 @@ int main(int argc, char** argv)
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
 		
-			double a = 1;//golden_section(minimized_function, 0, 20, 30);
-			printf("Calculated alpha: %f\n", a);
-			
 			double sum = 0;
 			
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
 				sum += abs(observedField.data[j] - result[j]);
-				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
+				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
 			}
 			delete result;
 
@@ -215,7 +212,7 @@ int main(int argc, char** argv)
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
 			if (exit_condition == EC_EPSILON && deviation < epsilon)
 			{
-				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d\n", epsilon, i);
+				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
 				break;
 			}
 			//gridInfo(boundary);

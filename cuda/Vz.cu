@@ -95,9 +95,12 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
-	printf("Found %d CUDA devices, ", deviceCount);
+
 	if (deviceCount == 0)
+	{
+		fprintf(stderr, "No CUDA devices found\n");
 		return 0;
+	}
 	
 	memset(result, 0, nCol * nRow * dsize);
 	
