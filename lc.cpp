@@ -18,6 +18,8 @@
 
 #include "golden.h"
 
+#include "windows\getopt.h"
+
 #ifdef GEO_BUILD_LC
 
 double* min_g1;
@@ -60,6 +62,73 @@ void put_to_0(double* result, int size)
 
 int main(int argc, char** argv)
 {
+	char* fieldFilename = NULL;
+	char* outputFilename = NULL;
+	char* initialBoundaryFileName = NULL;
+	
+	double dsigma = NAN;
+	double alpha = NAN;
+	double epsilon = NAN;
+	double asimptota = NAN;
+	int iterations = 0;
+
+	int c;
+	while ((c = getopt(argc, argv, "f:s:i:a:b:e:n:t:")) != -1)
+	{
+		switch (c)
+		{
+		case 'f':
+			fieldFilename = optarg; break;
+		case 's':
+			dsigma = atof(optarg); break;
+		case 'i':
+			initialBoundaryFileName = optarg; break;
+		case 'a':
+			alpha = atof(optarg); break;
+		case 'b':
+			outputFilename = optarg; break;
+		case 'e':
+			epsilon = atof(optarg); break;
+		case 'n':
+			iterations = atoi(optarg); break;
+		case 't':
+			asimptota = atoi(optarg); break;
+		default:
+			fprintf(stderr, "Invalid argument\n");
+			return 1;
+		}
+	}
+
+	if (fieldFilename == NULL)
+	{
+		fprintf(stderr, "Field should be specified\n");
+		return 1;
+	}
+
+	if (iterations == 0 && isnan(epsilon))
+	{
+		fprintf(stderr, "One of arguments -n or -e should be specified\n");
+		return 1;
+	}
+
+	if (isnan(alpha))
+	{
+		fprintf(stderr, "Alpha should be specified\n");
+		return 1;
+	}
+
+	if (isnan(dsigma))
+	{
+		fprintf(stderr, "Delta sigma should be specified\n");
+		return 1;
+	}
+
+	if (isnan(asimptota) && initialBoundaryFileName == NULL)
+	{
+		fprintf(stderr, "One of arguments -t or -i should be specified\n");
+		return 1;
+	}
+
 	int mpi_rank = 0, mpi_size = 1;
 
 #ifdef USE_MPI
@@ -69,27 +138,26 @@ int main(int argc, char** argv)
 #endif
 
 	cudaPrintInfo();
-	if (argc < 6)
-	{
-		printf("Usage: lc <observed_field.grd> <boundary.grd> <density> <alpha> <iterations> [output.grd]\n");
-		return 1;
-	}
-	char* fieldFilename = argv[1];
-	char* boundaryFilename = argv[2];
-	double dsigma = atof(argv[3]);
-	double alpha = atof(argv[4]);
-	double iterations = atoi(argv[5]);
 	
-	char* outputFilename = NULL;
-	if (argc > 6)
-		outputFilename = argv[6];
-
 	Grid observedField(fieldFilename);
-	Grid modelBoundary(boundaryFilename);
-	Grid boundary(boundaryFilename);
 	
-	fill_blank(modelBoundary);
-	fill_blank(boundary);
+	Grid boundary(fieldFilename); // z_n
+
+	// Set boundary to asimptota value or read initial boundary file
+	Grid* modelBoundary = NULL;
+	if (initialBoundaryFileName != NULL)
+	{
+		modelBoundary = &Grid(initialBoundaryFileName);
+		fill_blank(*modelBoundary);
+		
+		boundary.Read(initialBoundaryFileName);
+		fill_blank(boundary);
+	}
+	else
+	{
+		for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+			boundary.data[j] = asimptota;
+	}
 
 	printf("Calculating c_function...");
 	
@@ -106,10 +174,14 @@ int main(int argc, char** argv)
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		gridInfo(boundary);
-		gridInfo(modelBoundary);
-		gridInfo(observedField);
-		FLOAT* result = CalculateDirectProblem(modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
+		// gridInfo(boundary);
+		// gridInfo(modelBoundary);
+		// gridInfo(observedField);
+		FLOAT* result;
+		if (modelBoundary != NULL)
+			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
+		else
+			result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
 		
 		//put_to_0(result, boundary.nCol * boundary.nRow);
 
@@ -129,24 +201,7 @@ int main(int argc, char** argv)
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
 				sum += abs(observedField.data[j] - result[j]);
-			
-			//	if (boundary.data[j] > 0.5)
-				{
-					// boundary.data[j] /= (1 + alpha * boundary.data[j] * (observedField.data[j] - result[j]));
-					//if (isnan(result[j]))
-					//	printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-					boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
-				}
-			//	else
-			//		boundary.data[j] = (observedField.data[j] - a * result[j]) / (2 * M_PI * GRAVITY_CONST * dsigma);
-					
-				
-				/*double min = 4;
-				double max = 26;
-				if (boundary.data[j] < min)
-					boundary.data[j] = min; 
-				if (boundary.data[j] > max)
-					boundary.data[j] = max;*/
+				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 			}
 			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
 			gridInfo(boundary);
@@ -157,9 +212,14 @@ int main(int argc, char** argv)
 	
 	if (mpi_rank == MPI_MASTER)
 	{
-		boundary.zMin = boundary.get_Min();
-		boundary.zMax = boundary.get_Max();
-		boundary.Write(outputFilename);
+		if (outputFilename != NULL)
+		{
+			boundary.zMin = boundary.get_Min();
+			boundary.zMax = boundary.get_Max();
+			boundary.Write(outputFilename);
+		}
+		else
+			fprintf(stderr, "Warning: Output file is not specified\n");
 	}
 
 #ifdef USE_MPI	
