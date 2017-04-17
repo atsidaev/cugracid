@@ -28,6 +28,7 @@
     <ClCompile Include="..\recalc.cpp" />
     <ClCompile Include="..\recalc_up.cpp" />
     <ClCompile Include="..\v3.cpp" />
+    <ClCompile Include="getopt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cuda\info.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="..\golden.h" />
     <ClInclude Include="..\grid\Grid.h" />
     <ClInclude Include="..\recalc_up.h" />
+    <ClInclude Include="getopt.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\cuda\info.cu" />

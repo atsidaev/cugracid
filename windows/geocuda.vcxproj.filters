@@ -12,6 +12,9 @@
     <ClCompile Include="..\grid\Grid.cpp">
       <Filter>grid</Filter>
     </ClCompile>
+    <ClCompile Include="getopt.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\direct.h" />
@@ -29,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="..\grid\Grid.h">
       <Filter>grid</Filter>
+    </ClInclude>
+    <ClInclude Include="getopt.h">
+      <Filter>windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +54,9 @@
     </Filter>
     <Filter Include="cuda">
       <UniqueIdentifier>{11c61e92-1b83-4b15-9e23-f461f37c1bdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{f8a2dfff-167f-4652-957f-0f9a250b05b5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
