@@ -88,6 +88,9 @@ int main(int argc, char** argv)
 	Grid modelBoundary(boundaryFilename);
 	Grid boundary(boundaryFilename);
 	
+	fill_blank(modelBoundary);
+	fill_blank(boundary);
+
 	printf("Calculating c_function...");
 	
 	FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
@@ -108,7 +111,7 @@ int main(int argc, char** argv)
 		gridInfo(observedField);
 		FLOAT* result = CalculateDirectProblem(modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
 		
-		put_to_0(result, boundary.nCol * boundary.nRow);
+		//put_to_0(result, boundary.nCol * boundary.nRow);
 
 		// printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 

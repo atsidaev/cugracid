@@ -42,6 +42,7 @@ int main(int argc, char** argv)
 
 	Grid g(filename);
 	printf("Grid read: %d x %d\n", g.nRow, g.nCol);
+	fill_blank(g);
 	FLOAT* result = CalculateDirectProblem(g, dsigma, mpi_rank, mpi_size);
 
 	if (mpi_rank == MPI_MASTER && outputFilename != NULL)

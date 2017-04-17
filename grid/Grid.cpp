@@ -183,3 +183,12 @@ double Grid::get_Max()
 			max = data[i];
 	return max;
 }
+
+// Utility methods
+void fill_blank(Grid& grid)
+{
+	auto avg = grid.get_Average();
+	for (int i = 0; i < grid.nCol * grid.nRow; i++)
+		if (grid.data[i] == grid.BlankValue)
+			grid.data[i] = avg;
+}

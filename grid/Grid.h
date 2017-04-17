@@ -46,3 +46,5 @@ public:
 	bool Read(const char* fileName);
 	bool Write(const char* fileName);
 };
+
+void fill_blank(Grid& grid);
