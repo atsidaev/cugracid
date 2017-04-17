@@ -199,18 +199,23 @@ int main(int argc, char** argv)
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
 		
-			double sum = 0;
+			double sum_f = 0, sum_g = 0;
 			
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
-				sum += abs(observedField.data[j] - result[j]);
-				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
+				auto b = boundary.data[j] / (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
+
+				sum_f += abs(observedField.data[j] - result[j]);
+				sum_g += abs(boundary.data[j] - b);
+
+				boundary.data[j] = b;
 			}
 			delete result;
 
-			auto deviation = sum / (boundary.nCol * boundary.nRow);
-			printf("Deviation: %f\n", sum / (boundary.nCol * boundary.nRow));
-			if (exit_condition == EC_EPSILON && deviation < epsilon)
+			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
+			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
+			printf("Deviation: field: %f, grid: %f\n", deviation_f, deviation_g);
+			if (exit_condition == EC_EPSILON && deviation_f < epsilon)
 			{
 				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
 				break;
