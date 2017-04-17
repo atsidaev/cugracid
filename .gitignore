@@ -11,3 +11,5 @@ m_to_km
 /*.sln
 /*.suo
 /*.pdb
+/.vs/geocuda/v14/*.suo
+/*.user
