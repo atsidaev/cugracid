@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\direct.cpp" />
+    <ClCompile Include="..\golden.cpp" />
+    <ClCompile Include="..\lc.cpp" />
+    <ClCompile Include="..\lc_ass.cpp" />
+    <ClCompile Include="..\m_to_km.cpp" />
+    <ClCompile Include="..\recalc.cpp" />
+    <ClCompile Include="..\recalc_up.cpp" />
+    <ClCompile Include="..\v3.cpp" />
+    <ClCompile Include="..\grid\Grid.cpp">
+      <Filter>grid</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\direct.h" />
+    <ClInclude Include="..\global.h" />
+    <ClInclude Include="..\golden.h" />
+    <ClInclude Include="..\recalc_up.h" />
+    <ClInclude Include="..\cuda\info.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cuda\recalc.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cuda\Vz.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\grid\Grid.h">
+      <Filter>grid</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\cuda\recalc.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\cuda\Vz.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\cuda\info.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="grid">
+      <UniqueIdentifier>{aab90590-25ec-4d25-8a9d-185a709a882e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cuda">
+      <UniqueIdentifier>{11c61e92-1b83-4b15-9e23-f461f37c1bdf}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

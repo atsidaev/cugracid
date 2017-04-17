@@ -19,30 +19,30 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="direct.cpp" />
-    <ClCompile Include="golden.cpp" />
-    <ClCompile Include="grid\Grid.cpp" />
-    <ClCompile Include="lc.cpp" />
-    <ClCompile Include="lc_ass.cpp" />
-    <ClCompile Include="m_to_km.cpp" />
-    <ClCompile Include="recalc.cpp" />
-    <ClCompile Include="recalc_up.cpp" />
-    <ClCompile Include="v3.cpp" />
+    <ClCompile Include="..\direct.cpp" />
+    <ClCompile Include="..\golden.cpp" />
+    <ClCompile Include="..\grid\Grid.cpp" />
+    <ClCompile Include="..\lc.cpp" />
+    <ClCompile Include="..\lc_ass.cpp" />
+    <ClCompile Include="..\m_to_km.cpp" />
+    <ClCompile Include="..\recalc.cpp" />
+    <ClCompile Include="..\recalc_up.cpp" />
+    <ClCompile Include="..\v3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cuda\info.h" />
-    <ClInclude Include="cuda\recalc.h" />
-    <ClInclude Include="cuda\Vz.h" />
-    <ClInclude Include="direct.h" />
-    <ClInclude Include="global.h" />
-    <ClInclude Include="golden.h" />
-    <ClInclude Include="grid\Grid.h" />
-    <ClInclude Include="recalc_up.h" />
+    <ClInclude Include="..\cuda\info.h" />
+    <ClInclude Include="..\cuda\recalc.h" />
+    <ClInclude Include="..\cuda\Vz.h" />
+    <ClInclude Include="..\direct.h" />
+    <ClInclude Include="..\global.h" />
+    <ClInclude Include="..\golden.h" />
+    <ClInclude Include="..\grid\Grid.h" />
+    <ClInclude Include="..\recalc_up.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cuda\info.cu" />
-    <CudaCompile Include="cuda\recalc.cu" />
-    <CudaCompile Include="cuda\Vz.cu" />
+    <CudaCompile Include="..\cuda\info.cu" />
+    <CudaCompile Include="..\cuda\recalc.cu" />
+    <CudaCompile Include="..\cuda\Vz.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DAB72618-74A6-4888-9B6E-0A3F954CF974}</ProjectGuid>
