@@ -28,7 +28,6 @@
     <ClCompile Include="..\recalc.cpp" />
     <ClCompile Include="..\recalc_up.cpp" />
     <ClCompile Include="..\v3.cpp" />
-    <ClCompile Include="getopt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cuda\info.h" />

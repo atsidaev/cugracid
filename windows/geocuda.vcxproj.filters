@@ -12,9 +12,6 @@
     <ClCompile Include="..\grid\Grid.cpp">
       <Filter>grid</Filter>
     </ClCompile>
-    <ClCompile Include="getopt.cpp">
-      <Filter>windows</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\direct.h" />
