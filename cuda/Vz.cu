@@ -13,15 +13,15 @@
 #define THREADS_COUNT 128
 
 __device__
-FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
+CUDA_FLOAT Vz1(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT nu, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
 {
-	FLOAT x_dif = (xi - x);
-	FLOAT y_dif = (nu - y);
-	FLOAT z_dif2 = (z2 - H);
-	FLOAT z_dif1 = (z1 - H);
+	CUDA_FLOAT x_dif = (xi - x);
+	CUDA_FLOAT y_dif = (nu - y);
+	CUDA_FLOAT z_dif2 = (z2 - H);
+	CUDA_FLOAT z_dif1 = (z1 - H);
 
-	FLOAT R1 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif1 * z_dif1);
-	FLOAT R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
+	CUDA_FLOAT R1 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif1 * z_dif1);
+	CUDA_FLOAT R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
 
 	return 
 		-((nu == y ? 0 : y_dif * log((x_dif + R2) / (x_dif + R1))) + 
@@ -32,21 +32,21 @@ FLOAT Vz1(FLOAT x, FLOAT y, FLOAT xi, FLOAT nu, FLOAT z1, FLOAT z2, FLOAT H)
 }
 
 __device__
-FLOAT Vz2(FLOAT x, FLOAT y, FLOAT xi, FLOAT y1, FLOAT y2, FLOAT z1, FLOAT z2, FLOAT H)
+CUDA_FLOAT Vz2(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
 {
 	return Vz1(x, y, xi, y2, z1, z2, H) - Vz1(x, y, xi, y1, z1, z2, H);
 }
 
 __device__
-FLOAT Vz3(FLOAT x, FLOAT y, FLOAT x1, FLOAT x2, FLOAT y1, FLOAT y2, FLOAT z1, FLOAT z2, FLOAT H)
+CUDA_FLOAT Vz3(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT x1, CUDA_FLOAT x2, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
 {
 	return Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
 }
 
 __global__
-void Calculate(int first_block_pos, int maximumPos, int nCol, FLOAT xLL, FLOAT yLL, FLOAT xStep, FLOAT yStep, FLOAT* top, FLOAT* bottom, FLOAT* result)
+void Calculate(int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xStep, CUDA_FLOAT yStep, CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result)
 {
-	__shared__ FLOAT sync[THREADS_COUNT];
+	__shared__ CUDA_FLOAT sync[THREADS_COUNT];
 	
 	int pos_grid = (first_block_pos + threadIdx.x);
 	if (pos_grid >= maximumPos)
@@ -60,26 +60,27 @@ void Calculate(int first_block_pos, int maximumPos, int nCol, FLOAT xLL, FLOAT y
 	int xPos = pos_grid % nCol;
 	int yPos = pos_grid / nCol;
 	
-	FLOAT x = xLL + xStep * blockIdx.x + xStep / 2;
-	FLOAT y = yLL + yStep * blockIdx.y + yStep / 2;
+	CUDA_FLOAT x = xLL + xStep * blockIdx.x + xStep / 2;
+	CUDA_FLOAT y = yLL + yStep * blockIdx.y + yStep / 2;
 	
-	FLOAT x1 = xLL + xStep * xPos;
-	FLOAT x2 = x1 + xStep;
+	CUDA_FLOAT x1 = xLL + xStep * xPos;
+	CUDA_FLOAT x2 = x1 + xStep;
 	
-	FLOAT y1 = yLL + yStep * yPos;
-	FLOAT y2 = y1 + yStep;
+	CUDA_FLOAT y1 = yLL + yStep * yPos;
+	CUDA_FLOAT y2 = y1 + yStep;
 
-	FLOAT t = top[pos_grid];
-	FLOAT b = bottom[pos_grid];
+	CUDA_FLOAT t = top[pos_grid];
+	CUDA_FLOAT b = bottom[pos_grid];
 	
 	int pos_result = blockIdx.x + blockIdx.y * nCol;
 	
-	FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
-	
+	CUDA_FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
+	if (dsigma != NULL)
+		r *= dsigma[pos_grid];
 	// printf("Field at (%f,%f) for (%f..%f,%f..%f,%f..%f) is %f\n", x,y,x1,x2,y1,y2,t,b,r);
 	
 	sync[threadIdx.x] = r;
-	FLOAT res = result[pos_result];
+	CUDA_FLOAT res = result[pos_result];
 	__syncthreads();
 	if (threadIdx.x)
 		return;
@@ -89,7 +90,7 @@ void Calculate(int first_block_pos, int maximumPos, int nCol, FLOAT xLL, FLOAT y
 	result[pos_result] = res;
 }
 
-int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, FLOAT xLL, FLOAT yLL, FLOAT xSize, FLOAT ySize)
+int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize)
 {
 	int returnCode = 1;
 	
@@ -104,10 +105,11 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	
 	memset(result, 0, nCol * nRow * dsize);
 	
-	FLOAT **resultd, **bottomd, **topd;
-	resultd = new FLOAT*[deviceCount];
-	bottomd = new FLOAT*[deviceCount];
-	topd = new FLOAT*[deviceCount];
+	CUDA_FLOAT **resultd, **bottomd, **topd, **dsigmad;
+	resultd = new CUDA_FLOAT*[deviceCount];
+	bottomd = new CUDA_FLOAT*[deviceCount];
+	topd = new CUDA_FLOAT*[deviceCount];
+	dsigmad = new CUDA_FLOAT*[deviceCount];
 
 	// Setup inbound and outbound arrays for all CUDA devices
 	for (int dev = 0; dev < deviceCount; dev++)
@@ -120,6 +122,16 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 		cudaMemcpy(topd[dev], top, nCol * nRow * dsize, cudaMemcpyHostToDevice);
 		cudaMemcpy(bottomd[dev], bottom, nCol * nRow * dsize, cudaMemcpyHostToDevice);
 		cudaMemcpy(resultd[dev], result, nCol * nRow * dsize, cudaMemcpyHostToDevice);
+
+		if (dsigma != NULL)
+		{
+			cudaMalloc((void**)&dsigmad[dev], nCol * nRow * dsize);
+			cudaMemcpy(dsigmad[dev], dsigma, nCol * nRow * dsize, cudaMemcpyHostToDevice);
+		}
+		else
+		{
+			dsigmad[dev] = NULL;
+		}
 	}
 
 	dim3 blocks(nCol, nRow);
@@ -131,12 +143,12 @@ int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, in
 	while (pos < maximumPos)
 	{
 		cudaSetDevice(currentDevice);
-		Calculate<<<blocks,threads>>>(pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], resultd[currentDevice]);
+		Calculate<<<blocks,threads>>>(pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], dsigmad[currentDevice], resultd[currentDevice]);
 		pos += THREADS_COUNT;
 		currentDevice = (currentDevice + 1) % deviceCount;
 	}
 
-	FLOAT* result_tmp;
+	CUDA_FLOAT* result_tmp;
 	cudaHostAlloc((void**)&result_tmp, nCol * nRow * dsize, cudaHostAllocDefault);
 	
 	for (int dev = 0; dev < deviceCount; dev++)

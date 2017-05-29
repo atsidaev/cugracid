@@ -1,1 +1,1 @@
-int CalculateVz(FLOAT* top, FLOAT* bottom, FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, FLOAT xLL, FLOAT yLL, FLOAT xSize, FLOAT ySize);
+int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize);

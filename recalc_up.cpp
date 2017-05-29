@@ -14,22 +14,22 @@
 
 #include "grid/Grid.h"
 
-FLOAT* CalculateRecalcUp(Grid& field, double height, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateRecalcUp(Grid& field, double height, int mpi_rank, int mpi_size)
 {
 	int mpi_rows_portion = field.nRow / mpi_size;
 	printf("Every MPI thread will process %d rows\n", mpi_rows_portion);
 
 	int grid_length = field.nCol * field.nRow;
 
-	FLOAT *result;
+	CUDA_FLOAT *result;
 	if (mpi_rank == MPI_MASTER)
 	{
-		result = new FLOAT[mpi_size * grid_length];
+		result = new CUDA_FLOAT[mpi_size * grid_length];
 		memset(result, 0, mpi_size * grid_length * dsize);
 	}
 	else
 	{
-		result = new FLOAT[grid_length];
+		result = new CUDA_FLOAT[grid_length];
 		memset(result, 0, grid_length * dsize);
 	}
 	

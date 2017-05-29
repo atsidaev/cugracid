@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 	for (int i = 0; i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		FLOAT* result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
+		CUDA_FLOAT* result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
 
 		int center = (boundary.nCol / 2) * boundary.nRow + boundary.nRow / 2;
 

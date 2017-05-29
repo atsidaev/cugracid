@@ -1,5 +1,5 @@
-#define FLOAT double
-#define dsize sizeof(FLOAT)
+#define CUDA_FLOAT double
+#define dsize sizeof(CUDA_FLOAT)
 
 #define MPI_MASTER 0
 
@@ -8,8 +8,8 @@
 const double GRAVITY_CONST = 6.67384; // CODATA
 
 // Build parameters
-//#define GEO_BUILD_V3
+#define GEO_BUILD_V3
 //#define GEO_BUILD_LC
-#define GEO_BUILD_LCASS
+//#define GEO_BUILD_LCASS
 //#define GEO_BUILD_RECALC
 //#define GEO_BUILD_M2KM

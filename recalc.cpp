@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 
 	Grid g(filename);
 	printf("Grid read: %d x %d\n", g.nRow, g.nCol);
-	FLOAT* result;
+	CUDA_FLOAT* result;
 	result = CalculateRecalcUp(g, height, mpi_rank, mpi_size);
 
 	if (mpi_rank == MPI_MASTER && outputFilename != NULL)

@@ -167,7 +167,7 @@ int main(int argc, char** argv)
 
 	printf("Calculating c_function...");
 	
-	FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
+	CUDA_FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
 	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 		observedField.data[j] = observedField.data[j] - model_field[j];
 
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 		// gridInfo(boundary);
 		// gridInfo(modelBoundary);
 		// gridInfo(observedField);
-		FLOAT* result;
+		CUDA_FLOAT* result;
 		if (modelBoundary != NULL)
 			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
 		else
