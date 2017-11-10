@@ -18,7 +18,7 @@
 
 #include "direct.h"
 
-#ifdef GEO_BUILD_V3
+#if defined(GEO_BUILD_V3)
 
 int main(int argc, char** argv)
 {
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 	if (dsigmaGrid == NULL)
 		result = CalculateDirectProblem(g, dsigma, mpi_rank, mpi_size);
 	else
-		result = CalculateDirectProblem(g, *dsigmaGrid, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(g, dsigmaGrid, mpi_rank, mpi_size);
 
 	if (mpi_rank == MPI_MASTER && outputFilename != NULL)
 	{

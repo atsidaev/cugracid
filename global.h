@@ -13,3 +13,11 @@ const double GRAVITY_CONST = 6.67384; // CODATA
 //#define GEO_BUILD_LCASS
 //#define GEO_BUILD_RECALC
 //#define GEO_BUILD_M2KM
+
+#ifndef _WINDOWS
+	#define GEO_BUILD_V3
+	#define GEO_BUILD_LC
+	#define GEO_BUILD_LCASS
+	#define GEO_BUILD_RECALC
+	#define GEO_BUILD_M2KM
+#endif

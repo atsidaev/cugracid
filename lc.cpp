@@ -1,4 +1,5 @@
 #include <cstring>
+#include <fstream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,9 +19,13 @@
 
 #include "golden.h"
 
+#ifdef _WINDOWS
 #include "windows\getopt.h"
+#else
+#include <unistd.h>
+#endif
 
-#ifdef GEO_BUILD_LC
+#if defined(GEO_BUILD_LC)
 
 typedef enum { IDT_BOUNDARY, IDT_ASIMPTOTIC_PLANE } initial_data_type_t;
 typedef enum { EC_EPSILON, EC_ITERATIONS_NUMBER } exit_contition_t;
@@ -34,7 +39,7 @@ double minimized_function(double alpha)
 	double sum = 0;
 	for (int i = 0; i < min_items; i++)
 	{
-		sum += abs(min_g1[i] - alpha * min_g2[i]);
+		sum += fabs(min_g1[i] - alpha * min_g2[i]);
 	}
 	double res = sum / min_items;
 	// printf("	Min: for alpha=%f is %f\n", alpha, res);
@@ -71,6 +76,7 @@ int main(int argc, char** argv)
 	char* dsigmaFileName = NULL;
 
 	double dsigma = NAN;
+	char* dsigmaFile = NULL;
 	double alpha = NAN;
 	double epsilon = NAN;
 	double asimptota = NAN;
@@ -98,7 +104,14 @@ int main(int argc, char** argv)
 		case 'f':
 			fieldFilename = optarg; break;
 		case 's':
-			dsigma = atof(optarg); break;
+		{
+			std::ifstream f(optarg);
+			if (f.good())
+				dsigmaFile = optarg;
+			else
+				dsigma = atof(optarg); 
+			break;
+		}
 		case 'b':
 			initialBoundaryFileName = optarg; break;
 		case 'a':
@@ -135,7 +148,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if (isnan(dsigma))
+	if (isnan(dsigma) && dsigmaFile == NULL)
 	{
 		fprintf(stderr, "Delta sigma should be specified\n");
 		return 1;
@@ -164,11 +177,15 @@ int main(int argc, char** argv)
 	
 	Grid boundary(fieldFilename); // z_n
 
+	Grid* dsigmaGrid = NULL;
+	if (dsigmaFile != NULL)
+		dsigmaGrid = new Grid(dsigmaFile);
+
 	// Set boundary to asimptota value or read initial boundary file
 	Grid* modelBoundary = NULL;
 	if (initial_data_type == IDT_BOUNDARY)
 	{
-		modelBoundary = &Grid(initialBoundaryFileName);
+		modelBoundary = new Grid(initialBoundaryFileName);
 		fill_blank(*modelBoundary);
 		
 		boundary.Read(initialBoundaryFileName);
@@ -182,7 +199,7 @@ int main(int argc, char** argv)
 
 	printf("Calculating c_function...");
 	
-	CUDA_FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, mpi_rank, mpi_size);
+	CUDA_FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 		observedField.data[j] = observedField.data[j] - model_field[j];
 
@@ -200,9 +217,9 @@ int main(int argc, char** argv)
 		// gridInfo(observedField);
 		CUDA_FLOAT* result;
 		if (modelBoundary != NULL)
-			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, mpi_rank, mpi_size);
+			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 		else
-			result = CalculateDirectProblem(boundary, asimptota, dsigma, mpi_rank, mpi_size);
+			result = CalculateDirectProblem(boundary, asimptota, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 		
 		//put_to_0(result, boundary.nCol * boundary.nRow);
 
@@ -220,8 +237,8 @@ int main(int argc, char** argv)
 			{
 				auto b = boundary.data[j] / (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
 
-				sum_f += abs(observedField.data[j] - result[j]);
-				sum_g += abs(boundary.data[j] - b);
+				sum_f += fabs(observedField.data[j] - result[j]);
+				sum_g += fabs(boundary.data[j] - b);
 
 				boundary.data[j] = b;
 			}

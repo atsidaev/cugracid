@@ -29,7 +29,7 @@ double minimized_function(double alpha)
 	double sum = 0;
 	for (int i = 0; i < min_items; i++)
 	{
-		sum += abs(min_g1[i] - alpha * min_g2[i]);
+		sum += fabs(min_g1[i] - alpha * min_g2[i]);
 	}
 	double res = sum / min_items;
 	// printf("	Min: for alpha=%f is %f\n", alpha, res);
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 			
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
-				sum += abs(observedField.data[j] - result[j]);
+				sum += fabs(observedField.data[j] - result[j]);
 			
 				boundary.data[j] /= (1 + boundary.data[j] * alpha * (observedField.data[j] - a * result[j]));
 				

@@ -105,8 +105,16 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi
 	return CalculateDirectProblem(g, asimptota, dsigma, NULL, mpi_rank, mpi_size);
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& g, Grid& dsigma, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, Grid* dsigma, int mpi_rank, int mpi_size)
 {
 	double asimptota = g.get_Average();
-	return CalculateDirectProblem(g, asimptota, 0, &dsigma, mpi_rank, mpi_size);
+	return CalculateDirectProblem(g, asimptota, 0, dsigma, mpi_rank, mpi_size);
+}
+
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size)
+{
+	if (dsigmaGrid == NULL)
+		return CalculateDirectProblem(g, dsigma, mpi_rank, mpi_size);
+	else
+		return CalculateDirectProblem(g, dsigmaGrid, mpi_rank, mpi_size);
 }
