@@ -1,10 +1,10 @@
-CC=g++
+CC=nvcc
 CXX=g++
 CXXFLAGS=-I$(CUDA_INSTALL_PATH)/include
 NVCC=nvcc
-NVCFLAGS=-arch=sm_21
+NVCFLAGS=-gencode arch=compute_35,code=compute_35 -gencode arch=compute_35,code=sm_35 -x cu $(shell pkg-config --cflags cuda-9.0)
 
-LDFLAGS=-L$(CUDA_INSTALL_PATH)/lib64 -lcudart -lOpenCL
+LDFLAGS=$(shell pkg-config --libs cuda-9.0) -lcudart
 
 all:	v3 lc lc_ass m_to_km recalc
 
