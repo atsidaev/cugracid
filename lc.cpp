@@ -68,15 +68,30 @@ int main(int argc, char** argv)
 	char* fieldFilename = NULL;
 	char* outputFilename = NULL;
 	char* initialBoundaryFileName = NULL;
-	
+	char* dsigmaFileName = NULL;
+
 	double dsigma = NAN;
 	double alpha = NAN;
 	double epsilon = NAN;
 	double asimptota = NAN;
 	int iterations = 0;
 
+
+	static struct options long_options[] =
+	{
+		{ "field", required_argument, NULL, 'f' },		// field file name
+		{ "dsigma", required_argument, NULL, 's' },		// delta sigma value
+		{ "boundary", required_argument, NULL, 'b' },	// initial boundary file name
+		{ "alpha", required_argument, NULL, 'a' },		// alpha stabilizer value
+		{ "eps", required_argument, NULL, 'e' },		// epsilon max discrepancy value
+		{ "iterations", required_argument, NULL, 'i' },	// max count of required iterations
+		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
+		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
+		{ NULL, 0, NULL, 0 }
+	};
+
 	int c;
-	while ((c = getopt(argc, argv, "f:s:b:a:o:e:i:t:")) != -1)
+	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:")) != -1)
 	{
 		switch (c)
 		{
