@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 	double epsilon = NAN;
 	double asimptota = NAN;
 	int iterations = 0;
-
+	char print_help = 0;
 
 	static struct option long_options[] =
 	{
@@ -95,6 +95,7 @@ int main(int argc, char** argv)
 		{ "iterations", required_argument, NULL, 'i' },	// max count of required iterations
 		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
+		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -126,10 +127,24 @@ int main(int argc, char** argv)
 			iterations = atoi(optarg); break;
 		case 't':
 			asimptota = atoi(optarg); break;
+		case 'h':
+			print_help = 1; break;
 		default:
 			fprintf(stderr, "Invalid argument\n");
 			return 1;
 		}
+	}
+
+	if (print_help || argc == 1)
+	{
+		option* o = long_options;
+		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2018\nValid options:\n");
+		while (o->name != NULL)
+		{
+			fprintf(stderr, "\t--%s, -%c\n", o->name, o->val);
+			o++;
+		}
+		return 255;
 	}
 
 	if (fieldFilename == NULL)
