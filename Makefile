@@ -6,17 +6,18 @@ NVCFLAGS=-gencode arch=compute_35,code=compute_35 -gencode arch=compute_35,code=
 
 LDFLAGS=$(shell pkg-config --libs cuda-9.0) -lcudart
 
-all:	v3 lc lc_ass m_to_km recalc
+BINARIES:=v3 lc m_to_km recalc
+
+
+all:	$(BINARIES)
 
 clean:
 	find -name '*.o' -delete
-	rm v3 lc lc_ass recalc m_to_km
+	rm $(BINARIES) recalc
 
 v3:	v3.o direct.o cuda/info.o cuda/Vz.o grid/Grid.o
 
 lc:	lc.o direct.o golden.o cuda/info.o cuda/Vz.o grid/Grid.o
-
-lc_ass:	lc_ass.o direct.o golden.o cuda/info.o cuda/Vz.o grid/Grid.o
 
 recalc: recalc.o recalc_up.o cuda/info.o grid/Grid.o cuda/recalc.o
 
