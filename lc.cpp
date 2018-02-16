@@ -19,8 +19,8 @@
 
 #include "golden.h"
 
-#ifdef _WINDOWS
-#include "windows\getopt.h"
+#ifdef WIN32
+#include "windows/getopt.h"
 #else
 #include <unistd.h>
 #endif
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 	int iterations = 0;
 
 
-	static struct options long_options[] =
+/*	static struct options long_options[] =
 	{
 		{ "field", required_argument, NULL, 'f' },		// field file name
 		{ "dsigma", required_argument, NULL, 's' },		// delta sigma value
@@ -95,9 +95,9 @@ int main(int argc, char** argv)
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
 		{ NULL, 0, NULL, 0 }
 	};
-
+*/
 	int c;
-	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:")) != -1)
+	while ((c = getopt(argc, argv, "f:s:b:a:o:e:i:t:")) != -1)
 	{
 		switch (c)
 		{

@@ -84,6 +84,11 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid*
 
 }
 
+CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size)
+{
+	return CalculateDirectProblem(bottom, top, dsigma, NULL, mpi_rank, mpi_size);
+}
+
 CUDA_FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size)
 {
 	int grid_length = g.nCol * g.nRow;
