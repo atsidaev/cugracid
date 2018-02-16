@@ -77,6 +77,11 @@ int main(int argc, char** argv)
 	char* initialBoundaryFileName = NULL;
 	char* dsigmaFileName = NULL;
 
+	char* outFieldPrefix = NULL;
+	char* outDiffFieldPrefix = NULL;
+	char* outSurfacePrefix = NULL;
+	char* outDiffSurfacePrefix = NULL;
+
 	double dsigma = NAN;
 	char* dsigmaFile = NULL;
 	double alpha = NAN;
@@ -96,6 +101,10 @@ int main(int argc, char** argv)
 		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
 		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
+		{ "out-field-prefix", required_argument, NULL, 0 },		// field debug output on each iteration
+		{ "out-diff-field-prefix", required_argument, NULL, 0 },	// diff (U-Un) debug output on each iteration
+		{ "out-surface-prefix", required_argument, NULL, 0 },		// surface output on each iteration file prefix 
+		{ "out-diff-surface-prefix", required_argument, NULL, 0 },		// diff surface output on each iteration file prefix
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -129,8 +138,20 @@ int main(int argc, char** argv)
 			asimptota = atoi(optarg); break;
 		case 'h':
 			print_help = 1; break;
+		/* Long-only options */
+		case 0:
+			if (strcmp(long_options[option_index].name, "out-field-prefix") == 0)
+				outFieldPrefix = optarg;
+			else if (strcmp(long_options[option_index].name, "out-diff-field-prefix") == 0)
+				outDiffFieldPrefix = optarg;
+			else if (strcmp(long_options[option_index].name, "out-surface-prefix") == 0)
+				outSurfacePrefix = optarg;
+			else if (strcmp(long_options[option_index].name, "out-diff-surface-prefix") == 0)
+				outDiffSurfacePrefix = optarg;
+
+			break;
 		default:
-			fprintf(stderr, "Invalid argument\n");
+			fprintf(stderr, "Invalid argument %c\n", c);
 			return 1;
 		}
 	}
@@ -141,7 +162,10 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2018\nValid options:\n");
 		while (o->name != NULL)
 		{
-			fprintf(stderr, "\t--%s, -%c\n", o->name, o->val);
+			fprintf(stderr, "\t--%s", o->name);
+			if (o->val != 0)
+				fprintf(stderr, ", -%c", o->val);
+			fprintf(stderr, "\n");
 			o++;
 		}
 		return 255;
@@ -237,21 +261,22 @@ int main(int argc, char** argv)
 	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
-		// gridInfo(boundary);
-		// gridInfo(modelBoundary);
-		// gridInfo(observedField);
 		CUDA_FLOAT* result;
 		if (modelBoundary != NULL)
 			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 		else
 			result = CalculateDirectProblem(boundary, asimptota, dsigma, dsigmaGrid, mpi_rank, mpi_size);
-		
+
 		//put_to_0(result, boundary.nCol * boundary.nRow);
 
 		// printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
 
 		if (mpi_rank == MPI_MASTER)
 		{
+		
+			// if (outFieldPrefix != NULL)
+			//	DebugGridSave(outFieldPrefix, result, );
+		
 			min_g1 = observedField.data;
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
@@ -269,6 +294,15 @@ int main(int argc, char** argv)
 			}
 			delete result;
 
+			// if (outSurfacePrefix != NULL)
+			//	DebugGridSave(outSurfacePrefix, result, );
+
+			// if (outDiffFieldPrefix != NULL)
+			//	DebugGridSave(outSurfacePrefix, result, );
+
+			// if (outDiffSurfacePrefix != NULL)
+			//	DebugGridSave(outSurfacePrefix, result, );
+
 			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
 			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
 			printf("Deviation: field: %f, grid: %f\n", deviation_f, deviation_g);
@@ -277,7 +311,6 @@ int main(int argc, char** argv)
 				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
 				break;
 			}
-			//gridInfo(boundary);
 		}
 	
 	}
