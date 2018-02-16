@@ -14,6 +14,7 @@
 #include "cuda/Vz.h"
 #include "cuda/info.h"
 
+#include "file_utils.h"
 #include "grid/Grid.h"
 
 #include "direct.h"
@@ -41,13 +42,21 @@ int main(int argc, char** argv)
 	errno = 0;
 
 	char* filename = argv[1];
+	if (!file_exists(filename))
+	{
+		#ifdef USE_MPI
+		MPI_Finalize();
+		#endif	
+		return 1;
+	}
+
+
 	double dsigma = std::strtod(argv[2], &e);
 	Grid* dsigmaGrid = NULL;
 
 	if (*e != '\0' || errno != 0) // str to double conversion failed
 	{
-		ifstream f(argv[2]);
-		if (!f.good())
+		if (!file_exists(argv[2]))
 		{
 			std::cerr << "Invalid density value. Please provide constsnt double of grid file name" << endl;
 			return 1;

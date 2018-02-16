@@ -17,6 +17,7 @@
 
 #include "direct.h"
 
+#include "file_utils.h"
 #include "golden.h"
 
 #ifdef WIN32
@@ -172,14 +173,22 @@ int main(int argc, char** argv)
 #endif
 
 	cudaPrintInfo();
-	
+
+	if (!file_exists(fieldFilename) || !file_exists(fieldFilename))
+		return 1;
+
 	Grid observedField(fieldFilename);
 	
 	Grid boundary(fieldFilename); // z_n
 
 	Grid* dsigmaGrid = NULL;
 	if (dsigmaFile != NULL)
+	{
+		if (!file_exists(dsigmaFile))
+			return 1;
+
 		dsigmaGrid = new Grid(dsigmaFile);
+	}
 
 	// Set boundary to asimptota value or read initial boundary file
 	Grid* modelBoundary = NULL;
