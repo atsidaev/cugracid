@@ -45,13 +45,13 @@ double minimized_function(double alpha)
 	}
 	double res = sum / min_items;
 	// printf("	Min: for alpha=%f is %f\n", alpha, res);
-	
+
 	return res;
 }
 
 void gridInfo(Grid& boundary)
 {
-	printf("Grid info: %dx%d, X: %f...%f, Y: %f..%f, xSize: %f, ySize: %f, Min: %f, Max: %f\n", 
+	printf("Grid info: %dx%d, X: %f...%f, Y: %f..%f, xSize: %f, ySize: %f, Min: %f, Max: %f\n",
 		boundary.nCol, boundary.nRow,
 		boundary.xLL, boundary.xLL + (boundary.nCol - 1) * boundary.xSize,
 		boundary.yLL, boundary.yLL + (boundary.nRow - 1) * boundary.ySize,
@@ -65,9 +65,27 @@ void put_to_0(double* result, int size)
 		for (int j = 0; j < size; j++)
 			avg += result[j];
 		avg /= size;
-		
+
 		for (int j = 0; j < size; j++)
 			result[j] -= avg;
+}
+
+void DebugGridSave(char* fileNamePrefix, int iteration, Grid& grid)
+{
+  char buf[256];
+	sprintf(buf, "%s_%04d.grd", fileNamePrefix, iteration);
+	grid.Write((const char*)buf);
+}
+
+void DebugGridSave(char* fileNamePrefix, int iteration, double* data, Grid& size)
+{
+	auto grid = Grid::GenerateEmptyGrid(size);
+	for (int i = 0; i < grid.nCol * grid.nRow; i++)
+			grid.data[i] = data[i];
+
+  char buf[256];
+	sprintf(buf, "%s_%04d.grd", fileNamePrefix, iteration);
+	grid.Write((const char*)buf);
 }
 
 int main(int argc, char** argv)
@@ -103,7 +121,7 @@ int main(int argc, char** argv)
 		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
 		{ "out-field-prefix", required_argument, NULL, 0 },		// field debug output on each iteration
 		{ "out-diff-field-prefix", required_argument, NULL, 0 },	// diff (U-Un) debug output on each iteration
-		{ "out-surface-prefix", required_argument, NULL, 0 },		// surface output on each iteration file prefix 
+		{ "out-surface-prefix", required_argument, NULL, 0 },		// surface output on each iteration file prefix
 		{ "out-diff-surface-prefix", required_argument, NULL, 0 },		// diff surface output on each iteration file prefix
 		{ NULL, 0, NULL, 0 }
 	};
@@ -121,7 +139,7 @@ int main(int argc, char** argv)
 			if (f.good())
 				dsigmaFile = optarg;
 			else
-				dsigma = atof(optarg); 
+				dsigma = atof(optarg);
 			break;
 		}
 		case 'b':
@@ -218,7 +236,6 @@ int main(int argc, char** argv)
 		return 1;
 
 	Grid observedField(fieldFilename);
-	
 	Grid boundary(fieldFilename); // z_n
 
 	Grid* dsigmaGrid = NULL;
@@ -236,7 +253,7 @@ int main(int argc, char** argv)
 	{
 		modelBoundary = new Grid(initialBoundaryFileName);
 		fill_blank(*modelBoundary);
-		
+
 		boundary.Read(initialBoundaryFileName);
 		fill_blank(boundary);
 	}
@@ -246,8 +263,8 @@ int main(int argc, char** argv)
 			boundary.data[j] = asimptota;
 	}
 
-	printf("Calculating c_function...");
-	
+//	printf("Calculating c_function...");
+
 	CUDA_FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 		observedField.data[j] = observedField.data[j] - model_field[j];
@@ -255,9 +272,9 @@ int main(int argc, char** argv)
 	put_to_0(observedField.data, boundary.nCol * boundary.nRow);
 
 	printf("Done!\n");
-	
+
 	printf("Field grid read\n");
-	
+
 	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
 		printf("Iteration %d\n", i);
@@ -273,16 +290,16 @@ int main(int argc, char** argv)
 
 		if (mpi_rank == MPI_MASTER)
 		{
-		
-			// if (outFieldPrefix != NULL)
-			//	DebugGridSave(outFieldPrefix, result, );
-		
+
+			if (outFieldPrefix != NULL)
+				DebugGridSave(outFieldPrefix, i, result, boundary);
+
 			min_g1 = observedField.data;
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
-		
+
 			double sum_f = 0, sum_g = 0;
-			
+
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
 				auto b = boundary.data[j] / (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
@@ -292,16 +309,23 @@ int main(int argc, char** argv)
 
 				boundary.data[j] = b;
 			}
+
+			if (outSurfacePrefix != NULL)
+				DebugGridSave(outSurfacePrefix, i, boundary);
+
+			/*if (outDiffFieldPrefix != NULL)
+			{
+				auto diff = Grid::Diff(boundary, )
+				DebugGridSave(outSurfacePrefix, result, );
+			}*/
+
+			if (outDiffSurfacePrefix != NULL)
+			{
+				auto diff = Grid::Diff(observedField, result);
+				DebugGridSave(outDiffSurfacePrefix, i, diff);
+			}
+
 			delete result;
-
-			// if (outSurfacePrefix != NULL)
-			//	DebugGridSave(outSurfacePrefix, result, );
-
-			// if (outDiffFieldPrefix != NULL)
-			//	DebugGridSave(outSurfacePrefix, result, );
-
-			// if (outDiffSurfacePrefix != NULL)
-			//	DebugGridSave(outSurfacePrefix, result, );
 
 			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
 			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
@@ -312,9 +336,9 @@ int main(int argc, char** argv)
 				break;
 			}
 		}
-	
+
 	}
-	
+
 	if (mpi_rank == MPI_MASTER)
 	{
 		if (outputFilename != NULL)
@@ -327,10 +351,10 @@ int main(int argc, char** argv)
 			fprintf(stderr, "Warning: Output file is not specified\n");
 	}
 
-#ifdef USE_MPI	
+#ifdef USE_MPI
 	MPI_Finalize();
 #endif
-	
+
 	return 0;
 }
 

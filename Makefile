@@ -1,6 +1,6 @@
 CC=nvcc
 CXX=g++
-CXXFLAGS=-I$(CUDA_INSTALL_PATH)/include --std=c++11 -DGEO_BUILD_ALL
+CXXFLAGS=-I$(CUDA_INSTALL_PATH)/include --std=c++11 -DGEO_BUILD_ALL -g
 NVCC=nvcc
 NVCFLAGS=-gencode arch=compute_35,code=compute_35 -gencode arch=compute_35,code=sm_35 -x cu $(shell pkg-config --cflags cuda-9.0)
 

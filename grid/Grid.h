@@ -37,7 +37,9 @@ public:
 	Grid();
 	Grid(const char* fileName);
 
-	static Grid& GenerateEmptyGrid(Grid& grid);
+	static Grid GenerateEmptyGrid(Grid& grid);
+	static Grid Diff(Grid& g1, Grid& g2);
+	static Grid Diff(Grid& g1, double* g2);
 
 	double get_Average();
 	double get_Min();

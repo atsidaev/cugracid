@@ -48,22 +48,36 @@ Grid::Grid()
 	Init();
 }
 
-Grid& Grid::GenerateEmptyGrid(Grid& g)
+Grid Grid::GenerateEmptyGrid(Grid& g)
 {
-	Grid* result = new Grid();
-	result->data = NULL;
-	result->nRow = g.nRow;
-	result->nCol = g.nCol;
-	result->xLL = g.xLL;
-	result->yLL = g.yLL;
-	result->xSize = g.xSize;
-	result->ySize = g.ySize;
-	result->zMin = g.zMin;
-	result->zMax = g.zMax;
-	result->Rotation = g.Rotation;
-	result->BlankValue = g.BlankValue;
+	Grid result;
+	result.data = NULL;
+	result.nRow = g.nRow;
+	result.nCol = g.nCol;
+	result.xLL = g.xLL;
+	result.yLL = g.yLL;
+	result.xSize = g.xSize;
+	result.ySize = g.ySize;
+	result.zMin = g.zMin;
+	result.zMax = g.zMax;
+	result.Rotation = g.Rotation;
+	result.BlankValue = g.BlankValue;
 
-	return *result;
+	return result;
+}
+
+Grid Grid::Diff(Grid& g1, double* g2)
+{
+	auto result = GenerateEmptyGrid(g1);
+	for (int i = 0; i < g1.nCol * g1.nRow; i++)
+		result.data[i] = g1.data[i] - g2[i];
+
+	return result;
+}
+
+Grid Grid::Diff(Grid& g1, Grid& g2)
+{
+	return Diff(g1, g2.data);
 }
 
 Grid::Grid(const char* fileName)
@@ -121,11 +135,11 @@ bool Grid::Read(const char* fileName)
 bool Grid::Write(const char* fileName)
 {
 	ofstream ofs(fileName, ios::binary | ios::out);
-	
+
 	WriteInt32(&ofs, 0x42525344); // header DSRB
 	WriteInt32(&ofs, sizeof(__int32));
 	WriteInt32(&ofs, 2); // Version
-	
+
 	WriteInt32(&ofs, 0x44495247); // grid GRID
 	WriteInt32(&ofs, 2 * sizeof(__int32) + 8 * sizeof(double));
 
@@ -148,7 +162,7 @@ bool Grid::Write(const char* fileName)
 	__int32 size = nCol * nRow * sizeof(double);
 	WriteInt32(&ofs, size);
 	ofs.write((char*)data, size);
-	
+
 	return true;
 }
 
@@ -162,7 +176,7 @@ double Grid::get_Average()
 			count++;
 			sum += data[i];
 		}
-	
+
 	return sum / count;
 }
 
