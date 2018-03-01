@@ -277,7 +277,7 @@ int main(int argc, char** argv)
 
 	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
-		printf("Iteration %d\n", i);
+		printf("Iteration %d: ", i);
 		CUDA_FLOAT* result;
 		if (modelBoundary != NULL)
 			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
@@ -298,17 +298,21 @@ int main(int argc, char** argv)
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
 
-			double sum_f = 0, sum_g = 0;
+			double sum_rms_f = 0, sum_f = 0, sum_g = 0;
 
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
-				auto b = boundary.data[j] / (1 + boundary.data[j] * alpha * (observedField.data[j] - result[j]));
+				auto diffU = observedField.data[j] - result[j];
+				auto b = boundary.data[j] / (1 + alpha * boundary.data[j] * diffU);
 
-				sum_f += fabs(observedField.data[j] - result[j]);
+				sum_rms_f += diffU * diffU;
+				sum_f += fabs(diffU);
 				sum_g += fabs(boundary.data[j] - b);
 
 				boundary.data[j] = b;
 			}
+
+			double avgZ = boundary.get_Average();
 
 			if (outSurfacePrefix != NULL)
 				DebugGridSave(outSurfacePrefix, i, boundary);
@@ -327,10 +331,11 @@ int main(int argc, char** argv)
 
 			delete result;
 
+			auto rms_f = sqrt(sum_rms_f / (boundary.nCol * boundary.nRow));
 			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
 			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
-			printf("Deviation: field: %f, grid: %f\n", deviation_f, deviation_g);
-			if (exit_condition == EC_EPSILON && deviation_f < epsilon)
+			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f\n", deviation_f, rms_f, deviation_g, avgZ);
+			if (exit_condition == EC_EPSILON && rms_f < epsilon)
 			{
 				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
 				break;
