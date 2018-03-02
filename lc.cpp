@@ -28,23 +28,6 @@
 typedef enum { IDT_BOUNDARY, IDT_ASIMPTOTIC_PLANE } initial_data_type_t;
 typedef enum { EC_EPSILON, EC_ITERATIONS_NUMBER } exit_contition_t;
 
-double* min_g1;
-double* min_g2;
-int min_items;
-
-double minimized_function(double alpha)
-{
-	double sum = 0;
-	for (int i = 0; i < min_items; i++)
-	{
-		sum += fabs(min_g1[i] - alpha * min_g2[i]);
-	}
-	double res = sum / min_items;
-	// printf("	Min: for alpha=%f is %f\n", alpha, res);
-
-	return res;
-}
-
 void gridInfo(Grid& boundary)
 {
 	printf("Grid info: %dx%d, X: %f...%f, Y: %f..%f, xSize: %f, ySize: %f, Min: %f, Max: %f\n",
@@ -232,7 +215,6 @@ int main(int argc, char** argv)
 		return 1;
 
 	Grid observedField(fieldFilename);
-	Grid boundary(fieldFilename); // z_n
 
 	Grid* dsigmaGrid = NULL;
 	if (dsigmaFile != NULL)
@@ -243,27 +225,30 @@ int main(int argc, char** argv)
 		dsigmaGrid = new Grid(dsigmaFile);
 	}
 
-	// Set boundary to asimptota value or read initial boundary file
-	Grid* modelBoundary = NULL;
+	// Set z0 boundary to asimptota value or read initial boundary file
+	Grid* z0 = NULL;
 	if (initial_data_type == IDT_BOUNDARY)
 	{
-		modelBoundary = new Grid(initialBoundaryFileName);
-		fill_blank(*modelBoundary);
-
-		boundary.Read(initialBoundaryFileName);
-		fill_blank(boundary);
+		z0 = new Grid(initialBoundaryFileName);
+		fill_blank(*z0);
 	}
 	else
 	{
-		for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
-			boundary.data[j] = asimptota;
+		z0 = new Grid(observedField);
+		create_empty_data(*z0);
+		fill_with_value(*z0, asimptota);
 	}
 
-//	printf("Calculating c_function...");
+	// Create asimptota grid from z0 (real asimptota or average value of initial boundary position)
+	Grid asimptotaGrid(*z0);
+	create_empty_data(asimptotaGrid);
+	fill_with_value(asimptotaGrid, z0->get_Average());
 
-	CUDA_FLOAT* model_field = CalculateDirectProblem(boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
-	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
-		observedField.data[j] = observedField.data[j] - model_field[j];
+	// Z_n is a addon to z0, which we try to restore
+	// Initially it is 0
+	Grid boundary(*z0); // z_n
+	create_empty_data(boundary);
+	fill_with_value(boundary, 0);
 
 	// Set observed field to 0
 	auto avg_U0 = observedField.get_Average();
@@ -271,28 +256,27 @@ int main(int argc, char** argv)
 	double rms_U0 = get_Rms(observedField);
 	printf("avg(U0)=%f (was set to 0 then), rms(U0)=%f\n", avg_U0, rms_U0);
 
+	Grid z_n(*z0);
+	create_empty_data(z_n);
+	fill_with_value(z_n, 0);
+
+	// Main calculation loop
 	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
 		printf("Iteration %d: ", i);
+
+		// Prepare grid with current z_n
+		for (int j = 0; j < z_n.nRow * z_n.nCol; j++)
+			z_n.data[i] = z0->data[i] + boundary.data[i];
+
 		CUDA_FLOAT* result;
-		if (modelBoundary != NULL)
-			result = CalculateDirectProblem(*modelBoundary, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
-		else
-			result = CalculateDirectProblem(boundary, asimptota, dsigma, dsigmaGrid, mpi_rank, mpi_size);
-
-		//put_to_0(result, boundary.nCol * boundary.nRow);
-
-		// printf("Result at 128, 128: %f\n", result[128 * 256 + 128]);
+		result = CalculateDirectProblem(asimptotaGrid, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 
 		if (mpi_rank == MPI_MASTER)
 		{
 
 			if (outFieldPrefix != NULL)
 				DebugGridSave(outFieldPrefix, i, result, boundary);
-
-			min_g1 = observedField.data;
-			min_g2 = result;
-			min_items = boundary.nCol * boundary.nRow;
 
 			double rms_f = 0, sum_f = 0, sum_g = 0, avg_Un = 0;
 
@@ -344,7 +328,7 @@ int main(int argc, char** argv)
 
 			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
 			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
-			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1-avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
+			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1 - avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
 			if (exit_condition == EC_EPSILON && rms_f < epsilon)
 			{
 				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
