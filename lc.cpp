@@ -248,7 +248,6 @@ int main(int argc, char** argv)
 	// Initially it is 0
 	Grid boundary(*z0); // z_n
 	create_empty_data(boundary);
-	fill_with_value(boundary, 0);
 
 	// Set observed field to 0
 	auto avg_U0 = observedField.get_Average();
@@ -258,25 +257,26 @@ int main(int argc, char** argv)
 
 	Grid z_n(*z0);
 	create_empty_data(z_n);
-	fill_with_value(z_n, 0);
+	copy_data(z_n, *z0);
+
+	copy_data(boundary, z_n);
 
 	// Main calculation loop
-	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
+	for (int iteration = 0; exit_condition == EC_EPSILON || iteration < iterations; iteration++)
 	{
-		printf("Iteration %d: ", i);
+		printf("Iteration %d: ", iteration);
 
-		// Prepare grid with current z_n
-		for (int j = 0; j < z_n.nRow * z_n.nCol; j++)
-			z_n.data[i] = z0->data[i] + boundary.data[i];
+		// // Prepare grid with current z_n
+		// for (int j = 0; j < z_n.nRow * z_n.nCol; j++)
+		// 	z_n.data[j] = z0->data[j] + boundary.data[j];
 
 		CUDA_FLOAT* result;
-		result = CalculateDirectProblem(asimptotaGrid, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(asimptotaGrid, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 
 		if (mpi_rank == MPI_MASTER)
 		{
-
 			if (outFieldPrefix != NULL)
-				DebugGridSave(outFieldPrefix, i, result, boundary);
+				DebugGridSave(outFieldPrefix, iteration, result, boundary);
 
 			double rms_f = 0, sum_f = 0, sum_g = 0, avg_Un = 0;
 
@@ -284,11 +284,11 @@ int main(int argc, char** argv)
 			{
 				auto diffU = observedField.data[j] - result[j];
 				auto b = boundary.data[j] / (1 + alpha * boundary.data[j] * diffU);
-
+				
 				rms_f += diffU * diffU;
 				sum_f += diffU;
 				sum_g += boundary.data[j] - b;
-				avg_Un += result[i];
+				avg_Un += result[j];
 
 				boundary.data[j] = b;
 			}
@@ -310,7 +310,7 @@ int main(int argc, char** argv)
 			rms_Un = sqrt(rms_Un / (boundary.nCol * boundary.nRow));
 
 			if (outSurfacePrefix != NULL)
-				DebugGridSave(outSurfacePrefix, i, boundary);
+				DebugGridSave(outSurfacePrefix, iteration, boundary);
 
 			/*if (outDiffFieldPrefix != NULL)
 			{
@@ -321,7 +321,7 @@ int main(int argc, char** argv)
 			if (outDiffSurfacePrefix != NULL)
 			{
 				auto diff = Grid::Diff(observedField, result);
-				DebugGridSave(outDiffSurfacePrefix, i, diff);
+				DebugGridSave(outDiffSurfacePrefix, iteration, diff);
 			}
 
 			delete result;
@@ -331,7 +331,7 @@ int main(int argc, char** argv)
 			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1 - avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
 			if (exit_condition == EC_EPSILON && rms_f < epsilon)
 			{
-				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
+				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, iteration);
 				break;
 			}
 		}
