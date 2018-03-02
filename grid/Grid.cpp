@@ -206,3 +206,15 @@ void fill_blank(Grid& grid)
 		if (grid.data[i] == grid.BlankValue)
 			grid.data[i] = avg;
 }
+
+double get_Rms(Grid& grid)
+{
+	auto avgObserved = grid.get_Average();
+	double rms = 0;
+	for (int i = 0; i < grid.nCol * grid.nRow; i++)
+	{
+		grid.data[i] -= avgObserved;
+		rms += grid.data[i] * grid.data[i];
+	}
+	return sqrt(rms / (grid.nCol * grid.nRow));
+}

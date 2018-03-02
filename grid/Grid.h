@@ -50,3 +50,4 @@ public:
 };
 
 void fill_blank(Grid& grid);
+double get_Rms(Grid& grid);

@@ -1,8 +1,6 @@
 #include <cstring>
 #include <fstream>
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 
 #ifdef USE_MPI
@@ -10,7 +8,6 @@
 #endif
 
 #include "global.h"
-#include "cuda/Vz.h"
 #include "cuda/info.h"
 
 #include "grid/Grid.h"
@@ -18,7 +15,6 @@
 #include "direct.h"
 
 #include "file_utils.h"
-#include "golden.h"
 
 #ifdef WIN32
 #include "windows/getopt.h"
@@ -269,11 +265,11 @@ int main(int argc, char** argv)
 	for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 		observedField.data[j] = observedField.data[j] - model_field[j];
 
-	put_to_0(observedField.data, boundary.nCol * boundary.nRow);
-
-	printf("Done!\n");
-
-	printf("Field grid read\n");
+	// Set observed field to 0
+	auto avg_U0 = observedField.get_Average();
+	put_to_0(observedField.data, observedField.nCol * observedField.nRow);
+	double rms_U0 = get_Rms(observedField);
+	printf("avg(U0)=%f (was set to 0 then), rms(U0)=%f\n", avg_U0, rms_U0);
 
 	for (int i = 0; exit_condition == EC_EPSILON || i < iterations; i++)
 	{
@@ -298,21 +294,36 @@ int main(int argc, char** argv)
 			min_g2 = result;
 			min_items = boundary.nCol * boundary.nRow;
 
-			double sum_rms_f = 0, sum_f = 0, sum_g = 0;
+			double rms_f = 0, sum_f = 0, sum_g = 0, avg_Un = 0;
 
 			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
 			{
 				auto diffU = observedField.data[j] - result[j];
 				auto b = boundary.data[j] / (1 + alpha * boundary.data[j] * diffU);
 
-				sum_rms_f += diffU * diffU;
-				sum_f += fabs(diffU);
-				sum_g += fabs(boundary.data[j] - b);
+				rms_f += diffU * diffU;
+				sum_f += diffU;
+				sum_g += boundary.data[j] - b;
+				avg_Un += result[i];
 
 				boundary.data[j] = b;
 			}
 
+			avg_Un /= boundary.nCol * boundary.nRow;
+
+			rms_f = sqrt(rms_f / (boundary.nCol * boundary.nRow));
 			double avgZ = boundary.get_Average();
+
+			double rms_Z = 0, rms_Un = 0;
+			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+			{
+				auto z_diff = boundary.data[j] - avgZ;
+				auto u_diff = result[j] - avg_Un;
+				rms_Z += z_diff * z_diff;
+				rms_Un += u_diff * u_diff;
+			}
+			rms_Z = sqrt(rms_Z / (boundary.nCol * boundary.nRow));
+			rms_Un = sqrt(rms_Un / (boundary.nCol * boundary.nRow));
 
 			if (outSurfacePrefix != NULL)
 				DebugGridSave(outSurfacePrefix, i, boundary);
@@ -331,10 +342,9 @@ int main(int argc, char** argv)
 
 			delete result;
 
-			auto rms_f = sqrt(sum_rms_f / (boundary.nCol * boundary.nRow));
 			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
 			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
-			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f\n", deviation_f, rms_f, deviation_g, avgZ);
+			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1-avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
 			if (exit_condition == EC_EPSILON && rms_f < epsilon)
 			{
 				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, i);
