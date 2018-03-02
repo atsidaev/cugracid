@@ -1,4 +1,6 @@
-#include <float.h>
+#include <cfloat>
+#include <vector>
+using namespace std;
 
 #include "Grid.h"
 
@@ -213,6 +215,12 @@ void fill_with_value(Grid& grid, double value)
 		grid.data[j] = value;
 }
 
+void copy_data(Grid& dst, Grid& src)
+{
+	for (int j = 0; j < dst.nCol * dst.nRow; j++)
+		dst.data[j] = src.data[j];;
+}
+
 
 double get_Rms(Grid& grid)
 {
@@ -226,7 +234,16 @@ double get_Rms(Grid& grid)
 	return sqrt(rms / (grid.nCol * grid.nRow));
 }
 
-double create_empty_data(Grid& grid)
+void create_empty_data(Grid& grid)
 {
 	grid.data = new double[grid.nCol * grid.nRow];
+}
+
+void crop_1_percent(Grid& grid)
+{
+	vector<double> list;
+	for (int i = 0; i < grid.nCol * grid.nRow; i++)
+	{
+		
+	}
 }
