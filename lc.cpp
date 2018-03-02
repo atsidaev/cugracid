@@ -229,6 +229,9 @@ int main(int argc, char** argv)
 	Grid* z0 = NULL;
 	if (initial_data_type == IDT_BOUNDARY)
 	{
+		if (!file_exists(initialBoundaryFileName))
+			return 1;
+
 		z0 = new Grid(initialBoundaryFileName);
 		fill_blank(*z0);
 	}
@@ -239,15 +242,12 @@ int main(int argc, char** argv)
 		fill_with_value(*z0, asimptota);
 	}
 
+	double nCol = z0->nCol, nRow = z0->nRow;
+
 	// Create asimptota grid from z0 (real asimptota or average value of initial boundary position)
 	Grid asimptotaGrid(*z0);
 	create_empty_data(asimptotaGrid);
 	fill_with_value(asimptotaGrid, z0->get_Average());
-
-	// Z_n is a addon to z0, which we try to restore
-	// Initially it is 0
-	Grid boundary(*z0); // z_n
-	create_empty_data(boundary);
 
 	// Set observed field to 0
 	auto avg_U0 = observedField.get_Average();
@@ -255,11 +255,18 @@ int main(int argc, char** argv)
 	double rms_U0 = get_Rms(observedField);
 	printf("avg(U0)=%f (was set to 0 then), rms(U0)=%f\n", avg_U0, rms_U0);
 
+	// We restore only an addition to the field, so removing model field from the observed one
+	printf("Calculating model field...");
+	CUDA_FLOAT* f_model;
+	f_model = CalculateDirectProblem(asimptotaGrid, *z0, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+	put_to_0(f_model, observedField.nCol * observedField.nRow);
+	for (int j = 0; j < nCol * nRow; j++)
+		observedField.data[j] -= f_model[j];
+	printf("Done!\n");
+
 	Grid z_n(*z0);
 	create_empty_data(z_n);
 	copy_data(z_n, *z0);
-
-	copy_data(boundary, z_n);
 
 	// Main calculation loop
 	for (int iteration = 0; exit_condition == EC_EPSILON || iteration < iterations; iteration++)
@@ -271,46 +278,46 @@ int main(int argc, char** argv)
 		// 	z_n.data[j] = z0->data[j] + boundary.data[j];
 
 		CUDA_FLOAT* result;
-		result = CalculateDirectProblem(asimptotaGrid, boundary, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(*z0, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 
 		if (mpi_rank == MPI_MASTER)
 		{
 			if (outFieldPrefix != NULL)
-				DebugGridSave(outFieldPrefix, iteration, result, boundary);
+				DebugGridSave(outFieldPrefix, iteration, result, z_n);
 
 			double rms_f = 0, sum_f = 0, sum_g = 0, avg_Un = 0;
 
-			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+			for (int j = 0; j < z_n.nCol * z_n.nRow; j++)
 			{
 				auto diffU = observedField.data[j] - result[j];
-				auto b = boundary.data[j] / (1 + alpha * boundary.data[j] * diffU);
+				auto b = z_n.data[j] / (1 + alpha * z_n.data[j] * diffU);
 				
 				rms_f += diffU * diffU;
 				sum_f += diffU;
-				sum_g += boundary.data[j] - b;
+				sum_g += z_n.data[j] - b;
 				avg_Un += result[j];
 
-				boundary.data[j] = b;
+				z_n.data[j] = b;
 			}
 
-			avg_Un /= boundary.nCol * boundary.nRow;
+			avg_Un /= nCol * nRow;
 
-			rms_f = sqrt(rms_f / (boundary.nCol * boundary.nRow));
-			double avgZ = boundary.get_Average();
+			rms_f = sqrt(rms_f / (nCol * nRow));
+			double avgZ = z_n.get_Average();
 
 			double rms_Z = 0, rms_Un = 0;
-			for (int j = 0; j < boundary.nCol * boundary.nRow; j++)
+			for (int j = 0; j < nCol * nRow; j++)
 			{
-				auto z_diff = boundary.data[j] - avgZ;
+				auto z_diff = z_n.data[j] - avgZ;
 				auto u_diff = result[j] - avg_Un;
 				rms_Z += z_diff * z_diff;
 				rms_Un += u_diff * u_diff;
 			}
-			rms_Z = sqrt(rms_Z / (boundary.nCol * boundary.nRow));
-			rms_Un = sqrt(rms_Un / (boundary.nCol * boundary.nRow));
+			rms_Z = sqrt(rms_Z / (nCol * nRow));
+			rms_Un = sqrt(rms_Un / (nCol * nRow));
 
 			if (outSurfacePrefix != NULL)
-				DebugGridSave(outSurfacePrefix, iteration, boundary);
+				DebugGridSave(outSurfacePrefix, iteration, z_n);
 
 			/*if (outDiffFieldPrefix != NULL)
 			{
@@ -326,8 +333,8 @@ int main(int argc, char** argv)
 
 			delete result;
 
-			auto deviation_f = sum_f / (boundary.nCol * boundary.nRow);
-			auto deviation_g = sum_g / (boundary.nCol * boundary.nRow);
+			auto deviation_f = sum_f / (nCol * nRow);
+			auto deviation_g = sum_g / (nCol * nRow);
 			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1 - avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
 			if (exit_condition == EC_EPSILON && rms_f < epsilon)
 			{
@@ -342,6 +349,12 @@ int main(int argc, char** argv)
 	{
 		if (outputFilename != NULL)
 		{
+			Grid boundary(z_n);
+			create_empty_data(boundary);
+			copy_data(boundary, z_n);
+			for (int j = 0; j < nCol * nRow; j++)
+				boundary.data[j] += z0->data[j];
+
 			boundary.zMin = boundary.get_Min();
 			boundary.zMax = boundary.get_Max();
 			boundary.Write(outputFilename);
