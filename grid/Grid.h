@@ -51,3 +51,5 @@ public:
 
 void fill_blank(Grid& grid);
 double get_Rms(Grid& grid);
+void fill_with_value(Grid& grid, double value);
+double create_empty_data(Grid& grid);

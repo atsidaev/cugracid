@@ -207,6 +207,13 @@ void fill_blank(Grid& grid)
 			grid.data[i] = avg;
 }
 
+void fill_with_value(Grid& grid, double value)
+{
+	for (int j = 0; j < grid.nCol * grid.nRow; j++)
+		grid.data[j] = value;
+}
+
+
 double get_Rms(Grid& grid)
 {
 	auto avgObserved = grid.get_Average();
@@ -217,4 +224,9 @@ double get_Rms(Grid& grid)
 		rms += grid.data[i] * grid.data[i];
 	}
 	return sqrt(rms / (grid.nCol * grid.nRow));
+}
+
+double create_empty_data(Grid& grid)
+{
+	grid.data = new double[grid.nCol * grid.nRow];
 }
