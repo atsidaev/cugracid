@@ -4,7 +4,6 @@
     <ClCompile Include="..\direct.cpp" />
     <ClCompile Include="..\golden.cpp" />
     <ClCompile Include="..\lc.cpp" />
-    <ClCompile Include="..\lc_ass.cpp" />
     <ClCompile Include="..\m_to_km.cpp" />
     <ClCompile Include="..\recalc.cpp" />
     <ClCompile Include="..\recalc_up.cpp" />
