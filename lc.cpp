@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 		case 'i':
 			iterations = atoi(optarg); break;
 		case 't':
-			asimptota = atoi(optarg); break;
+			asimptota = atof(optarg); break;
 		case 'h':
 			print_help = 1; break;
 		/* Long-only options */
