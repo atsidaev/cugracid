@@ -23,8 +23,6 @@
 #include <getopt.h>
 #endif
 
-#if defined(GEO_BUILD_LC)
-
 typedef enum { IDT_BOUNDARY, IDT_ASIMPTOTIC_PLANE } initial_data_type_t;
 typedef enum { EC_EPSILON, EC_ITERATIONS_NUMBER } exit_contition_t;
 
@@ -67,7 +65,7 @@ void DebugGridSave(char* fileNamePrefix, int iteration, double* data, Grid& size
 	grid.Write((const char*)buf);
 }
 
-int main(int argc, char** argv)
+int main_lc(int argc, char** argv)
 {
 	char* fieldFilename = NULL;
 	char* outputFilename = NULL;
@@ -369,5 +367,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-#endif

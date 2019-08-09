@@ -7,15 +7,6 @@
 
 const double GRAVITY_CONST = 6.67384; // CODATA
 
-// Build parameters
-#define GEO_BUILD_V3
-//#define GEO_BUILD_LC
-//#define GEO_BUILD_RECALC
-//#define GEO_BUILD_M2KM
-
-#ifndef WIN32
-	#define GEO_BUILD_V3
-	#define GEO_BUILD_LC
-	#define GEO_BUILD_RECALC
-	#define GEO_BUILD_M2KM
-#endif
+int main_lc(int argc, char** argv);
+int main_v3(int argc, char** argv);
+int main_m2km(int argc, char** argv);

@@ -23,6 +23,7 @@
     <ClCompile Include="..\golden.cpp" />
     <ClCompile Include="..\grid\Grid.cpp" />
     <ClCompile Include="..\lc.cpp" />
+    <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\m_to_km.cpp" />
     <ClCompile Include="..\recalc.cpp" />
     <ClCompile Include="..\recalc_up.cpp" />

@@ -4,9 +4,7 @@ using namespace std;
 #include "global.h"
 #include "grid/Grid.h"
 
-#ifdef GEO_BUILD_M2KM
-
-int main(int argc, char** argv)
+int main_m2km(int argc, char** argv)
 {
 	if (argc != 3)
 	{
@@ -23,5 +21,3 @@ int main(int argc, char** argv)
 	
 	g.Write(argv[2]);
 }
-
-#endif
