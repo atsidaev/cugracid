@@ -190,12 +190,6 @@ int main_lc(int argc, char** argv)
 		return 1;
 	}
 
-	if (!(isnan(asimptota) ^ initialBoundaryFileName == NULL))
-	{
-		fprintf(stderr, "One of arguments -t or -b should be specified\n");
-		return 1;
-	}
-
 	initial_data_type_t initial_data_type = initialBoundaryFileName == NULL ? IDT_ASIMPTOTIC_PLANE : IDT_BOUNDARY;
 	exit_contition_t exit_condition = isnan(epsilon) ? EC_ITERATIONS_NUMBER : EC_EPSILON;
 
@@ -245,7 +239,10 @@ int main_lc(int argc, char** argv)
 	// Create asimptota grid from z0 (real asimptota or average value of initial boundary position)
 	Grid asimptotaGrid(*z0);
 	create_empty_data(asimptotaGrid);
-	fill_with_value(asimptotaGrid, z0->get_Average());
+	if (initial_data_type == IDT_BOUNDARY && !isnan(asimptota))
+		fill_with_value(asimptotaGrid, asimptota);
+	else
+		fill_with_value(asimptotaGrid, z0->get_Average());
 
 	// Set observed field to 0
 	auto avg_U0 = observedField.get_Average();
@@ -271,12 +268,8 @@ int main_lc(int argc, char** argv)
 	{
 		printf("Iteration %d: ", iteration);
 
-		// // Prepare grid with current z_n
-		// for (int j = 0; j < z_n.nRow * z_n.nCol; j++)
-		// 	z_n.data[j] = z0->data[j] + boundary.data[j];
-
 		CUDA_FLOAT* result;
-		result = CalculateDirectProblem(*z0, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(asimptotaGrid, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 
 		if (mpi_rank == MPI_MASTER)
 		{
