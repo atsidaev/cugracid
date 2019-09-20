@@ -33,6 +33,9 @@
     <ClInclude Include="getopt.h">
       <Filter>windows</Filter>
     </ClInclude>
+    <ClInclude Include="getopt_header.h">
+      <Filter>windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\cuda\recalc.cu">

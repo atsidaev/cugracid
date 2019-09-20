@@ -39,6 +39,7 @@
     <ClInclude Include="..\grid\Grid.h" />
     <ClInclude Include="..\recalc_up.h" />
     <ClInclude Include="getopt.h" />
+    <ClInclude Include="getopt_header.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\cuda\info.cu" />
