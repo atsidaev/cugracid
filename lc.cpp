@@ -49,7 +49,7 @@ void put_to_0(double* result, int size)
 
 void DebugGridSave(char* fileNamePrefix, int iteration, Grid& grid)
 {
-  char buf[256];
+	char buf[256];
 	sprintf(buf, "%s_%04d.grd", fileNamePrefix, iteration);
 	grid.Write((const char*)buf);
 }
@@ -83,6 +83,7 @@ int main_lc(int argc, char** argv)
 	double epsilon = NAN;
 	double asimptota = NAN;
 	int iterations = 0;
+	int quit_after_diverged_iterations = 0;
 	char print_help = 0;
 
 	static struct option long_options[] =
@@ -95,6 +96,7 @@ int main_lc(int argc, char** argv)
 		{ "iterations", required_argument, NULL, 'i' },	// max count of required iterations
 		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
+		{ "quit-after-diverged-iterations", required_argument, NULL, 'q' },		// stop process if it diverges for N steps
 		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
 		{ "out-field-prefix", required_argument, NULL, 0 },		// field debug output on each iteration
 		{ "out-diff-field-prefix", required_argument, NULL, 0 },	// diff (U-Un) debug output on each iteration
@@ -104,7 +106,7 @@ int main_lc(int argc, char** argv)
 	};
 
 	int c, option_index = 0;
-	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:", long_options, &option_index)) != -1)
+	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:q:", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -131,6 +133,8 @@ int main_lc(int argc, char** argv)
 			iterations = atoi(optarg); break;
 		case 't':
 			asimptota = atof(optarg); break;
+		case 'q':
+			quit_after_diverged_iterations = atoi(optarg); break;
 		case 'h':
 			print_help = 1; break;
 		/* Long-only options */
@@ -172,9 +176,9 @@ int main_lc(int argc, char** argv)
 		return 1;
 	}
 
-	if (!(iterations == 0 ^ isnan(epsilon)))
+	if (isnan(epsilon) && iterations == 0)
 	{
-		fprintf(stderr, "One of arguments -i or -e should be specified\n");
+		fprintf(stderr, "One of arguments -e should be specified if -i omitted\n");
 		return 1;
 	}
 
@@ -255,16 +259,20 @@ int main_lc(int argc, char** argv)
 	CUDA_FLOAT* f_model;
 	f_model = CalculateDirectProblem(asimptotaGrid, *z0, dsigma, dsigmaGrid, mpi_rank, mpi_size);
 	put_to_0(f_model, observedField.nCol * observedField.nRow);
-	for (int j = 0; j < nCol * nRow; j++)
-		observedField.data[j] -= f_model[j];
+	// TODO: need to be tested since it produces invalid result for asymptote-based problem
+	// for (int j = 0; j < nCol * nRow; j++)
+	// 	observedField.data[j] -= f_model[j];
 	printf("Done!\n");
 
 	Grid z_n(*z0);
 	create_empty_data(z_n);
 	copy_data(z_n, *z0);
 
+	double prev_rms_f_div_rms_U0 = 0;
+	int diverged_iterations = 0;
+
 	// Main calculation loop
-	for (int iteration = 0; exit_condition == EC_EPSILON || iteration < iterations; iteration++)
+	for (int iteration = 0; iterations > 0 && iteration < iterations || iterations == 0; iteration++)
 	{
 		printf("Iteration %d: ", iteration);
 
@@ -326,12 +334,27 @@ int main_lc(int argc, char** argv)
 
 			auto deviation_f = sum_f / (nCol * nRow);
 			auto deviation_g = sum_g / (nCol * nRow);
-			printf("avg(U-Un)=%f \trms(U-Un)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1 - avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f, deviation_g, avgZ, rms_Z, rms_Un);
-			if (exit_condition == EC_EPSILON && rms_f < epsilon)
+			auto rms_f_div_rms_U0 = rms_f / rms_U0;
+			printf("avg(U-Un)=%f \trms(U-Un)/rms(U)=%f \tavg(Zn+1 - Zn)=%f\tavg(Zn+1)=%f,\trms(Zn+1 - avg(Zn+1))=%f,\trms(Un - avg(Un))=%f\n", deviation_f, rms_f_div_rms_U0, deviation_g, avgZ, rms_Z, rms_Un);
+			
+			if (exit_condition == EC_EPSILON && rms_f_div_rms_U0 < epsilon)
 			{
-				printf("Deviation is less than required epsilon %f, exiting. Iteration count %d.\n", epsilon, iteration);
+				printf("Deviation %f is less than required epsilon %f, exiting. Iterations count %d.\n", rms_f_div_rms_U0, epsilon, iteration);
 				break;
 			}
+
+			if (prev_rms_f_div_rms_U0 < rms_f_div_rms_U0)
+			{
+				diverged_iterations++;
+				prev_rms_f_div_rms_U0 = rms_f_div_rms_U0;
+				if (quit_after_diverged_iterations != 0 && iteration != 0 && quit_after_diverged_iterations == diverged_iterations)
+				{
+					printf("Diverged for %i iterations, exiting.\n", diverged_iterations);
+					break;
+				}
+			}
+			else
+				diverged_iterations = 0;
 		}
 
 	}
@@ -343,8 +366,8 @@ int main_lc(int argc, char** argv)
 			Grid boundary(z_n);
 			create_empty_data(boundary);
 			copy_data(boundary, z_n);
-			for (int j = 0; j < nCol * nRow; j++)
-				boundary.data[j] += z0->data[j];
+			//for (int j = 0; j < nCol * nRow; j++)
+			//	boundary.data[j] += z0->data[j];
 
 			boundary.zMin = boundary.get_Min();
 			boundary.zMax = boundary.get_Max();
