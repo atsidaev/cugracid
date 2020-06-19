@@ -1,5 +1,5 @@
 #include <iostream>
-using namespace std;
+#include <string.h>
 
 #include "global.h"
 
@@ -45,11 +45,11 @@ int main(int argc, char** argv)
 
 	if (program == nullptr)
 	{
-		cout << "Please create symbolic link with PROGRAM name to this executable. Also you may execute as " << argv[0] << " PROGRAM [args...]." << endl;
-		cout << "PROGRAM may be: ";
+		std::cout << "Please create symbolic link with PROGRAM name to this executable. Also you may execute as " << argv[0] << " PROGRAM [args...]." << std::endl;
+		std::cout << "PROGRAM may be: ";
 		for (int i = 0; i < sizeof(progs) / sizeof(geo_prog_t); i++)
-			cout << progs[i].name << " ";
-		cout << endl;
+			std::cout << progs[i].name << " ";
+		std::cout << std::endl;
 	}
 	else
 	{

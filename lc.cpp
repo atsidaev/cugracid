@@ -158,7 +158,7 @@ int main_lc(int argc, char** argv)
 	if (print_help || argc == 1)
 	{
 		option* o = long_options;
-		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2018\nValid options:\n");
+		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2020\nValid options:\n");
 		while (o->name != NULL)
 		{
 			fprintf(stderr, "\t--%s", o->name);

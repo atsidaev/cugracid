@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "hip/hip_runtime.h"
 
 #ifdef _WIN32
 #include <memory.h>
@@ -75,7 +74,7 @@ int Recalc(CUDA_FLOAT* field, CUDA_FLOAT height, CUDA_FLOAT* result, int nCol, i
 	int returnCode = 1;
 	
 	int deviceCount;
-	cudaGetDeviceCount(&deviceCount);
+	hipGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices, ", deviceCount);
 	// We need to get so many devices as we can to split data to equal-sized portions
 	while (nRow % deviceCount != 0)
@@ -92,12 +91,12 @@ int Recalc(CUDA_FLOAT* field, CUDA_FLOAT height, CUDA_FLOAT* result, int nCol, i
 
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
-		cudaSetDevice(dev);
-		cudaMalloc((void**)&resultd[dev], nCol * nRow * dsize);
-		cudaMalloc((void**)&fieldd[dev], nCol * nRow * dsize);
+		hipSetDevice(dev);
+		hipMalloc((void**)&resultd[dev], nCol * nRow * dsize);
+		hipMalloc((void**)&fieldd[dev], nCol * nRow * dsize);
 
-		cudaMemcpy(fieldd[dev], field, nCol * nRow * dsize, cudaMemcpyHostToDevice);
-		cudaMemcpy(resultd[dev], result, nCol * nRow * dsize, cudaMemcpyHostToDevice);
+		hipMemcpy(fieldd[dev], field, nCol * nRow * dsize, hipMemcpyHostToDevice);
+		hipMemcpy(resultd[dev], result, nCol * nRow * dsize, hipMemcpyHostToDevice);
 	}
 
 	dim3 blocks(nCol, nRow);
@@ -107,31 +106,31 @@ int Recalc(CUDA_FLOAT* field, CUDA_FLOAT height, CUDA_FLOAT* result, int nCol, i
 	{
 		for (int dev = 0; dev < deviceCount; dev++, pos += THREADS_COUNT)
 		{
-			cudaSetDevice(dev);
-			RecalcCU<<<blocks,threads>>>(pos, nCol, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, height, fieldd[dev], resultd[dev]);
+			hipSetDevice(dev);
+			hipLaunchKernelGGL(RecalcCU, dim3(blocks), dim3(threads), 0, 0, pos, nCol, 10017.376448317, 6395.193574, 3.0982365948353, 4.1303591058824, height, fieldd[dev], resultd[dev]);
 		}
 	}
 
 	
 	CUDA_FLOAT* result_tmp;
-	cudaHostAlloc((void**)&result_tmp, nCol * nRow * dsize, cudaHostAllocDefault);
+	hipHostMalloc((void**)&result_tmp, nCol * nRow * dsize, hipHostMallocDefault);
 	
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
-		cudaSetDevice(dev);
-		cudaDeviceSynchronize();
-		cudaError_t error = cudaGetLastError();
-		if (error != cudaSuccess)
+		hipSetDevice(dev);
+		hipDeviceSynchronize();
+		hipError_t error = hipGetLastError();
+		if (error != hipSuccess)
 		{
-			printf("Error: %s\n", cudaGetErrorString(error));
+			printf("Error: %s\n", hipGetErrorString(error));
 			returnCode = 0;
 		}
 	
-		cudaMemcpy(result_tmp, resultd[dev], nCol * nRow * dsize, cudaMemcpyDeviceToHost);
+		hipMemcpy(result_tmp, resultd[dev], nCol * nRow * dsize, hipMemcpyDeviceToHost);
 		for (int i = 0; i < nCol * nRow; i++)
 			result[i] += result_tmp[i];
-		cudaFree(resultd[dev]);
-		cudaFree(fieldd[dev]);
+		hipFree(resultd[dev]);
+		hipFree(fieldd[dev]);
 	}
 
 	delete[] fieldd;

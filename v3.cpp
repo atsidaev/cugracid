@@ -78,7 +78,7 @@ int main_v3(int argc, char** argv)
 	if (print_help || argc == 1)
 	{
 		option* o = long_options;
-		fprintf(stderr, "Program for gravity field forward calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2019\nValid options:\n");
+		fprintf(stderr, "Program for gravity field forward calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2020\nValid options:\n");
 		while (o->name != NULL)
 		{
 			fprintf(stderr, "\t--%s", o->name);

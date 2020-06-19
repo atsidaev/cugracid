@@ -1,16 +1,15 @@
 #include <stdio.h>
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "hip/hip_runtime.h"
 
 void cudaPrintInfo()
 {
 	int deviceCount;
-	cudaGetDeviceCount(&deviceCount);
+	hipGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices\n", deviceCount);
 
-	cudaDeviceProp props;
-	cudaGetDeviceProperties(&props, 0);
+	hipDeviceProp_t props;
+	hipGetDeviceProperties(&props, 0);
 	printf("%s API version %d.%d\n", props.name, props.major, props.minor);
 	printf("Maximum texture dimensions: 1D: %d, 2D: %d, 3D: %d\n", props.maxTexture1D, props.maxTexture2D, props.maxTexture3D);
     
