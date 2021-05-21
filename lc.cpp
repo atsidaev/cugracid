@@ -84,6 +84,7 @@ int main_lc(int argc, char** argv)
 	double asimptota = NAN;
 	int iterations = 0;
 	int quit_after_diverged_iterations = 0;
+	char near_surface = 0;
 	char print_help = 0;
 
 	static struct option long_options[] =
@@ -97,7 +98,8 @@ int main_lc(int argc, char** argv)
 		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
 		{ "quit-after-diverged-iterations", required_argument, NULL, 'q' },		// stop process if it diverges for N steps
-		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
+		{ "help", no_argument, NULL, 'h' },				// help 
+		{ "near-surface", no_argument, NULL, 'n' },			// use near-surface formula for calculation
 		{ "out-field-prefix", required_argument, NULL, 0 },		// field debug output on each iteration
 		{ "out-diff-field-prefix", required_argument, NULL, 0 },	// diff (U-Un) debug output on each iteration
 		{ "out-surface-prefix", required_argument, NULL, 0 },		// surface output on each iteration file prefix
@@ -106,7 +108,7 @@ int main_lc(int argc, char** argv)
 	};
 
 	int c, option_index = 0;
-	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:q:", long_options, &option_index)) != -1)
+	while ((c = getopt_long(argc, argv, "f:s:b:a:o:e:i:t:q:nh", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -135,6 +137,8 @@ int main_lc(int argc, char** argv)
 			asimptota = atof(optarg); break;
 		case 'q':
 			quit_after_diverged_iterations = atoi(optarg); break;
+		case 'n':
+			near_surface = 1; break;
 		case 'h':
 			print_help = 1; break;
 		/* Long-only options */
@@ -289,7 +293,11 @@ int main_lc(int argc, char** argv)
 			for (int j = 0; j < z_n.nCol * z_n.nRow; j++)
 			{
 				auto diffU = observedField.data[j] - result[j];
-				auto b = z_n.data[j] / (1 + alpha * z_n.data[j] * diffU);
+				double b;
+				if (!near_surface)
+					b = z_n.data[j] / (1 + alpha * z_n.data[j] * diffU);
+				else
+					b = z_n.data[j] - alpha * (diffU / (2 * MATH_PI * GRAVITY_CONST));
 				
 				rms_f += diffU * diffU;
 				sum_f += diffU;
