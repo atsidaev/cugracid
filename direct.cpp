@@ -14,7 +14,7 @@
 
 #include "grid/Grid.h"
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
 	int mpi_rows_portion = bottom.nRow / mpi_size;
 	if (bottom.nRow % mpi_size != 0)
@@ -41,7 +41,21 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid*
 	if (dsigmaGrid != NULL)
 		dsigmaArray = dsigmaGrid->data;
 
-	if (!CalculateVz(top.data, bottom.data, dsigmaArray, result, bottom.nCol, bottom.nRow, mpi_rows_portion * mpi_rank, mpi_rows_portion, bottom.xLL, bottom.yLL, bottom.xSize, bottom.ySize))
+	if (!CalculateVz(
+		top.data, 
+		bottom.data, 
+		dsigmaArray, 
+		result, 
+		bottom.nCol, 
+		bottom.nRow, 
+		mpi_rows_portion * mpi_rank, 
+		mpi_rows_portion, 
+		bottom.xLL, 
+		bottom.yLL, 
+		bottom.xSize, 
+		bottom.ySize, 
+		devices_list)
+	)
 	{
 #ifdef USE_MPI
 		MPI_Abort(MPI_COMM_WORLD, 0);
@@ -84,12 +98,12 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid*
 
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
-	return CalculateDirectProblem(bottom, top, dsigma, NULL, mpi_rank, mpi_size);
+	return CalculateDirectProblem(bottom, top, dsigma, NULL, mpi_rank, mpi_size, devices_list);
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
 	int grid_length = g.nCol * g.nRow;
 
@@ -101,25 +115,25 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& g, double asimptota, double dsigma, Gri
 
 	g2.data = top;
 
-	return CalculateDirectProblem(g2, g, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+	return CalculateDirectProblem(g2, g, dsigma, dsigmaGrid, mpi_rank, mpi_size, devices_list);
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
 	double asimptota = g.get_Average();
-	return CalculateDirectProblem(g, asimptota, dsigma, NULL, mpi_rank, mpi_size);
+	return CalculateDirectProblem(g, asimptota, dsigma, NULL, mpi_rank, mpi_size, devices_list);
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& g, Grid* dsigma, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, Grid* dsigma, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
 	double asimptota = g.get_Average();
-	return CalculateDirectProblem(g, asimptota, 0, dsigma, mpi_rank, mpi_size);
+	return CalculateDirectProblem(g, asimptota, 0, dsigma, mpi_rank, mpi_size, devices_list);
 }
 
-CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size)
+CUDA_FLOAT* CalculateDirectProblem(Grid& g, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list)
 {
 	if (dsigmaGrid == NULL)
-		return CalculateDirectProblem(g, dsigma, mpi_rank, mpi_size);
+		return CalculateDirectProblem(g, dsigma, mpi_rank, mpi_size, devices_list);
 	else
-		return CalculateDirectProblem(g, dsigmaGrid, mpi_rank, mpi_size);
+		return CalculateDirectProblem(g, dsigmaGrid, mpi_rank, mpi_size, devices_list);
 }

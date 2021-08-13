@@ -1,1 +1,2 @@
-int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize);
+#include <vector>
+int CalculateVz(double* top, double* bottom, double* dsigma, double* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, double xLL, double yLL, double xSize, double ySize, std::vector<unsigned char> devices_list);

@@ -162,7 +162,7 @@ int main_lc(int argc, char** argv)
 	if (print_help || argc == 1)
 	{
 		option* o = long_options;
-		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2020\nValid options:\n");
+		fprintf(stderr, "Program for Local Corrections calculation on CUDA GPU. (C) Alexander Tsidaev, 2014-2021\nValid options:\n");
 		while (o->name != NULL)
 		{
 			fprintf(stderr, "\t--%s", o->name);
@@ -208,8 +208,8 @@ int main_lc(int argc, char** argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);        /* get current process id */
 	MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);        /* get number of processes */
 #endif
-
-	cudaPrintInfo();
+	std::vector<unsigned char> devices_list;
+	cudaPrintInfo(devices_list);
 
 	if (!file_exists(fieldFilename) || !file_exists(fieldFilename))
 		return 1;
@@ -261,7 +261,7 @@ int main_lc(int argc, char** argv)
 	// We restore only an addition to the field, so removing model field from the observed one
 	printf("Calculating model field...");
 	CUDA_FLOAT* f_model;
-	f_model = CalculateDirectProblem(asimptotaGrid, *z0, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+	f_model = CalculateDirectProblem(asimptotaGrid, *z0, dsigma, dsigmaGrid, mpi_rank, mpi_size, devices_list);
 	put_to_0(f_model, observedField.nCol * observedField.nRow);
 	// TODO: need to be tested since it produces invalid result for asymptote-based problem
 	// for (int j = 0; j < nCol * nRow; j++)
@@ -281,7 +281,7 @@ int main_lc(int argc, char** argv)
 		printf("Iteration %d: ", iteration);
 
 		CUDA_FLOAT* result;
-		result = CalculateDirectProblem(asimptotaGrid, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(asimptotaGrid, z_n, dsigma, dsigmaGrid, mpi_rank, mpi_size, devices_list);
 
 		if (mpi_rank == MPI_MASTER)
 		{
@@ -308,6 +308,8 @@ int main_lc(int argc, char** argv)
 			}
 
 			avg_Un /= nCol * nRow;
+
+//			alpha = 1.00001 * alpha;
 
 			rms_f = sqrt(rms_f / (nCol * nRow));
 			double avgZ = z_n.get_Average();

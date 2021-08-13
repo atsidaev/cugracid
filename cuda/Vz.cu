@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <vector>
 #include <math.h>
 
 #include "hip/hip_runtime.h"
@@ -89,12 +90,11 @@ void Calculate(int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CU
 	result[pos_result] = res;
 }
 
-int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize)
+int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize, std::vector<unsigned char> devices_list)
 {
 	int returnCode = 1;
 	
-	int deviceCount;
-	hipGetDeviceCount(&deviceCount);
+	int deviceCount = devices_list.size();
 
 	if (deviceCount == 0)
 	{
@@ -113,7 +113,7 @@ int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FL
 	// Setup inbound and outbound arrays for all CUDA devices
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
-		hipSetDevice(dev);
+		hipSetDevice(devices_list[dev]);
 		hipMalloc((void**)&resultd[dev], nCol * nRow * dsize);
 		hipMalloc((void**)&bottomd[dev], nCol * nRow * dsize);
 		hipMalloc((void**)&topd[dev], nCol * nRow * dsize);
@@ -141,7 +141,7 @@ int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FL
 	int currentDevice = 0;
 	while (pos < maximumPos)
 	{
-		hipSetDevice(currentDevice);
+		hipSetDevice(devices_list[currentDevice]);
 		hipLaunchKernelGGL(Calculate, dim3(blocks), dim3(threads), 0, 0, pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], dsigmad[currentDevice], resultd[currentDevice]);
 		pos += THREADS_COUNT;
 		currentDevice = (currentDevice + 1) % deviceCount;
@@ -152,7 +152,7 @@ int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FL
 	
 	for (int dev = 0; dev < deviceCount; dev++)
 	{
-		hipSetDevice(dev);
+		hipSetDevice(devices_list[dev]);
 		hipDeviceSynchronize();
 		hipError_t error = hipGetLastError();
 		if (error != hipSuccess)

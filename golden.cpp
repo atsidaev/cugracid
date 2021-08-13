@@ -13,7 +13,7 @@ double golden_section(function f, int min, int max, int steps_count)
 
 	for (int i = 1; i <= steps_count; i++)
 	{
-		if( fu1<=fu2 )
+		if (fu1<=fu2)
 		{
 			b = h;
 			h = g;
@@ -30,5 +30,5 @@ double golden_section(function f, int min, int max, int steps_count)
 			fu2 = f(h);
 		}
 	}
-	return (fu1-fu2)/2+fu2;
+	return (fu1-fu2) / 2 + fu2;
 }

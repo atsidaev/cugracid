@@ -1,6 +1,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <vector>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,6 +36,7 @@ int main_v3(int argc, char** argv)
 		{ "dsigma", required_argument, NULL, 's' },		// delta sigma value
 		{ "asimptota", required_argument, NULL, 't' },	// depth of selected asimptita plane
 		{ "output", required_argument, NULL, 'o' },		// output boundary grid file name
+		{ "devices", required_argument, NULL, 'd' },	// which devices to use
 		{ "help", required_argument, NULL, 'h' },		// output boundary grid file name
 		{ NULL, 0, NULL, 0 }
 	};
@@ -46,8 +48,10 @@ int main_v3(int argc, char** argv)
 	char* outputFilename = NULL;
 	char print_help = 0;
 
+	std::vector<unsigned char> devices_list;
+
 	int c, option_index = 0;
-	while ((c = getopt_long(argc, argv, "b:s:t:o:h:", long_options, &option_index)) != -1)
+	while ((c = getopt_long(argc, argv, "b:s:t:o:h:d:", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -69,6 +73,17 @@ int main_v3(int argc, char** argv)
 			case 'h':
 				print_help = 1; break;
 				/* Long-only options */
+			case 'd':
+			{
+				char* pos;
+				while ((pos = strchr(optarg, ',')) != NULL) {
+					*pos = 0;
+					devices_list.push_back(atof(optarg));
+					optarg = pos + 1;
+				}
+				devices_list.push_back(atof(optarg));
+				break;
+			}
 			default:
 				fprintf(stderr, "Invalid argument %c\n", c);
 				return 1;
@@ -102,7 +117,7 @@ int main_v3(int argc, char** argv)
 		return 1;
 	}
 
-	cudaPrintInfo();
+	cudaPrintInfo(devices_list);
 
 	// Begin calculation
 
@@ -123,11 +138,11 @@ int main_v3(int argc, char** argv)
 	asimptota = isnan(asimptota) ? g.get_Average() : asimptota;
 
 	if (dsigmaFileName == NULL)
-		result = CalculateDirectProblem(g, asimptota, dsigma, NULL, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(g, asimptota, dsigma, NULL, mpi_rank, mpi_size, devices_list);
 	else
 	{
 		Grid dsigmaFile(dsigmaFileName);
-		result = CalculateDirectProblem(g, asimptota, 0, &dsigmaFile, mpi_rank, mpi_size);
+		result = CalculateDirectProblem(g, asimptota, 0, &dsigmaFile, mpi_rank, mpi_size, devices_list);
 	}
 
 	if (mpi_rank == MPI_MASTER && outputFilename != NULL)
