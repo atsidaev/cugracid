@@ -1,10 +1,19 @@
 #include <stdio.h>
 #include <vector>
+
+#ifdef __HIP__
 #include "hip/hip_runtime.h"
+#define cudaGetDeviceCount hipGetDeviceCount
+#define cudaDeviceProp hipDeviceProp_t
+#define cudaGetDeviceProperties hipGetDeviceProperties
+#else
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#endif
 
 void cudaPrintInfoForOneGpu(int num) {
-	hipDeviceProp_t props;
-	hipGetDeviceProperties(&props, num);
+	cudaDeviceProp props;
+	cudaGetDeviceProperties(&props, num);
 	printf("%s API version %d.%d\n", props.name, props.major, props.minor);
 	printf("Max block dimensions: [%d, %d, %d]\n", props.maxThreadsDim[0], props.maxThreadsDim[1], props.maxThreadsDim[2]);
 	printf("Threads per block: %d\n", props.maxThreadsPerBlock);
@@ -18,7 +27,7 @@ void cudaPrintInfo() {
 void cudaPrintInfo(std::vector<unsigned char> devices_list)
 {
 	int deviceCount;
-	hipGetDeviceCount(&deviceCount);
+	cudaGetDeviceCount(&deviceCount);
 	printf("Found %d CUDA devices, using ", deviceCount);
 	if (devices_list.size() > 0)
 		printf("%d", devices_list.size());
