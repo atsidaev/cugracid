@@ -34,15 +34,23 @@
 #define THREADS_COUNT 128
 
 __device__
-CUDA_FLOAT Vz1(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT nu, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
+float Vz1(CUDA_FLOAT _x, CUDA_FLOAT _y, CUDA_FLOAT _xi, CUDA_FLOAT _nu, CUDA_FLOAT _z1, CUDA_FLOAT _z2, CUDA_FLOAT _H)
 {
-	CUDA_FLOAT x_dif = (xi - x);
-	CUDA_FLOAT y_dif = (nu - y);
-	CUDA_FLOAT z_dif2 = (z2 - H);
-	CUDA_FLOAT z_dif1 = (z1 - H);
+	float x = _x;
+	float y = _y;
+	float xi = _xi;
+	float nu = _nu;
+	float z1 = _z1;
+	float z2 = _z2;
+	float H = _H;
 
-	CUDA_FLOAT R1 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif1 * z_dif1);
-	CUDA_FLOAT R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
+	float x_dif = (xi - x);
+	float y_dif = (nu - y);
+	float z_dif2 = (z2 - H);
+	float z_dif1 = (z1 - H);
+
+	float R1 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif1 * z_dif1);
+	float R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
 
 	return 
 		-((nu == y ? 0 : y_dif * log((x_dif + R2) / (x_dif + R1))) + 
@@ -53,13 +61,13 @@ CUDA_FLOAT Vz1(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT nu, CUDA_FL
 }
 
 __device__
-CUDA_FLOAT Vz2(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
+float Vz2(float x, float y, float xi, float y1, float y2, float z1, float z2, float H)
 {
 	return Vz1(x, y, xi, y2, z1, z2, H) - Vz1(x, y, xi, y1, z1, z2, H);
 }
 
 __device__
-CUDA_FLOAT Vz3(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT x1, CUDA_FLOAT x2, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
+float Vz3(float x, float y, float x1, float x2, float y1, float y2, float z1, float z2, float H)
 {
 	return Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
 }
