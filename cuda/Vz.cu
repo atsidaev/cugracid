@@ -14,9 +14,11 @@
 #define cudaGetErrorString hipGetErrorString
 #define cudaGetLastError hipGetLastError
 #define cudaFree hipFree
+#define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
+#define cudaMemcpyHostToDevice hipMemcpyHostToDevice
 #define cudaSuccess hipSuccess
 #define cudaError_t hipError_t
-#define LAUNCH(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) hipLaunchKernelGGL(RecalcCU, dim3(blocks), dim3(threads), 0, 0, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
+#define LAUNCH(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) hipLaunchKernelGGL(method, dim3(blocks), dim3(threads), 0, 0, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
 #else
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
