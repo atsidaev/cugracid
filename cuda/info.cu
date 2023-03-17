@@ -24,7 +24,7 @@ void cudaPrintInfo() {
 	cudaPrintInfoForOneGpu(0);
 }
 
-void cudaPrintInfo(std::vector<unsigned char> devices_list)
+void cudaPrintInfo(std::vector<unsigned char>& devices_list)
 {
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
@@ -35,6 +35,11 @@ void cudaPrintInfo(std::vector<unsigned char> devices_list)
 		printf("all");
 	printf(" of them\n");
 
+	if (devices_list.size() == 0) {
+		for (auto i = 0; i < deviceCount; i++)
+			devices_list.push_back(i);
+	}
+
 	if (devices_list.size() > 0) {
 		for (auto i = 0; i < devices_list.size(); i++)
 			cudaPrintInfoForOneGpu(devices_list[i]);
@@ -42,9 +47,5 @@ void cudaPrintInfo(std::vector<unsigned char> devices_list)
 	else
 		cudaPrintInfoForOneGpu(0);
 
-	if (devices_list.size() == 0) {
-		for (auto i = 0; i < deviceCount; i++)
-			devices_list.push_back(i);
-	}
 }
 
