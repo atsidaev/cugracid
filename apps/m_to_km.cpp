@@ -1,8 +1,8 @@
 #include <iostream>
 using namespace std;
 
-#include "global.h"
-#include "grid/Grid.h"
+#include "../global.h"
+#include "../grid/Grid.h"
 
 int main_m2km(int argc, char** argv)
 {

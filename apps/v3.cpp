@@ -11,14 +11,14 @@
 #include <mpi.h>
 #endif
 
-#include "global.h"
-#include "cuda/Vz.h"
-#include "cuda/info.h"
+#include "../global.h"
+#include "../cuda/Vz.h"
+#include "../cuda/info.h"
 
-#include "file_utils.h"
-#include "grid/Grid.h"
+#include "../file_utils.h"
+#include "../grid/Grid.h"
 
-#include "direct.h"
+#include "../calc/direct.h"
 
 #ifdef WIN32
 // TODO: split getopt.h to .h and .c

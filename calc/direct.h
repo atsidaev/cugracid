@@ -1,4 +1,4 @@
-#include "grid/Grid.h"
+#include "../grid/Grid.h"
 #include <vector>
 CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid* dsigmaGrid, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list);
 CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, int mpi_rank, int mpi_size, std::vector<unsigned char> devices_list);

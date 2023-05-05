@@ -8,11 +8,11 @@
 #include <mpi.h>
 #endif
 
-#include "global.h"
-#include "cuda/recalc.h"
-#include "cuda/info.h"
+#include "../global.h"
+#include "../cuda/recalc.h"
+#include "../cuda/info.h"
 
-#include "grid/Grid.h"
+#include "../grid/Grid.h"
 
 CUDA_FLOAT* CalculateRecalcUp(Grid& field, double height, int mpi_rank, int mpi_size)
 {

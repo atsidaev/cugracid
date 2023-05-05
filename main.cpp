@@ -14,6 +14,7 @@ geo_prog_t progs[] {
 	{ "v3", main_v3 },
 	{ "lc", main_lc },
 	{ "m2km", main_m2km },
+	{ "compare", main_compare },
 };
 
 int main(int argc, char** argv)

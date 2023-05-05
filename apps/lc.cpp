@@ -7,17 +7,17 @@
 #include <mpi.h>
 #endif
 
-#include "global.h"
-#include "cuda/info.h"
+#include "../global.h"
+#include "../cuda/info.h"
 
-#include "grid/Grid.h"
+#include "../grid/Grid.h"
 
-#include "direct.h"
+#include "../calc/direct.h"
 
-#include "file_utils.h"
+#include "../file_utils.h"
 
 #ifdef WIN32
-#include "windows/getopt.h"
+#include "../windows/getopt.h"
 #else
 #include <unistd.h>
 #include <getopt.h>
@@ -309,8 +309,6 @@ int main_lc(int argc, char** argv)
 
 			avg_Un /= nCol * nRow;
 
-//			alpha = 1.00001 * alpha;
-
 			rms_f = sqrt(rms_f / (nCol * nRow));
 			double avgZ = z_n.get_Average();
 
@@ -327,12 +325,6 @@ int main_lc(int argc, char** argv)
 
 			if (outSurfacePrefix != NULL)
 				DebugGridSave(outSurfacePrefix, iteration, z_n);
-
-			/*if (outDiffFieldPrefix != NULL)
-			{
-				auto diff = Grid::Diff(boundary, )
-				DebugGridSave(outSurfacePrefix, result, );
-			}*/
 
 			if (outDiffSurfacePrefix != NULL)
 			{

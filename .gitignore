@@ -16,3 +16,4 @@ m_to_km
 /windows/cuda/*.deps
 /windows/.vs/geocuda/v14/*.suo
 main
+.vscode
