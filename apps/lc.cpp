@@ -351,7 +351,7 @@ int main_lc(int argc, char** argv)
 				prev_rms_f_div_rms_U0 = rms_f_div_rms_U0;
 				if (quit_after_diverged_iterations != 0 && iteration != 0 && quit_after_diverged_iterations == diverged_iterations)
 				{
-					printf("Diverged for %i iterations, exiting.\n", diverged_iterations);
+					printf("Diverged for %i iterations of %d, exiting.\n", diverged_iterations, iteration);
 					break;
 				}
 			}
