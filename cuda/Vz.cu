@@ -2,70 +2,38 @@
 #include <vector>
 #include <math.h>
 
-#ifdef __HIP__
-#include "hip/hip_runtime.h"
-#define cudaSetDevice hipSetDevice
-#define cudaMalloc hipMalloc
-#define cudaMemcpy hipMemcpy
-#define cudaSetDevice hipSetDevice
-#define cudaDeviceSynchronize hipDeviceSynchronize
-#define cudaHostAlloc hipHostMalloc
-#define cudaHostAllocDefault hipHostMallocDefault
-#define cudaGetErrorString hipGetErrorString
-#define cudaGetLastError hipGetLastError
-#define cudaFree hipFree
-#define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
-#define cudaMemcpyHostToDevice hipMemcpyHostToDevice
-#define cudaSuccess hipSuccess
-#define cudaError_t hipError_t
-#define LAUNCH(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) hipLaunchKernelGGL(method, dim3(blocks), dim3(threads), 0, 0, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
-#else
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#define LAUNCH(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) method<<<blocks,threads>>>(first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
-#endif
-
 #ifdef _WIN32
 #include <memory.h>
 #endif
 
-#include "../global.h"
-
 #define THREADS_COUNT 128
 
-__device__
-CUDA_FLOAT Vz1(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT nu, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
-{
-	CUDA_FLOAT x_dif = (xi - x);
-	CUDA_FLOAT y_dif = (nu - y);
-	CUDA_FLOAT z_dif2 = (z2 - H);
-	CUDA_FLOAT z_dif1 = (z1 - H);
+#include "../global.h"
+#include "prism_Vz.cuh"
 
-	CUDA_FLOAT R1 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif1 * z_dif1);
-	CUDA_FLOAT R2 = sqrt(x_dif * x_dif + y_dif * y_dif + z_dif2 * z_dif2);
+#ifdef __HIP__
+#include "hipified.h"
+#define LAUNCH_FUNCTION_ON_PRISM(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) hipLaunchKernelGGL(method, dim3(blocks), dim3(threads), 0, 0, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
+#else
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#define LAUNCH_FUNCTION_ON_PRISM(method, blocks, threads, first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result) method<<<blocks,threads>>>(first_block_pos, maximumPos, nCol, xLL, yLL, xStep, yStep, top, bottom, dsigma, result)
+#endif
 
-	return 
-		-((nu == y ? 0 : y_dif * log((x_dif + R2) / (x_dif + R1))) + 
-		  (xi == x ? 0 : x_dif * log((y_dif + R2) / (y_dif + R1))) -
+//#define SIMPLIFY_SOURCES
 
-		((z_dif2 == 0 ? 0 : z_dif2 * atan(x_dif * y_dif / (z_dif2 * R2))) -
-		(z_dif1 == 0 ? 0 : z_dif1 * atan(x_dif * y_dif / (z_dif1 * R1)))));
-}
+// T must contain calc(x, y, z, x1, x2, y1, y2, z1, z2)
+// x, y, z - observation point
+// x1..x2, y1..y2, z1..z2 - the prism
 
-__device__
-CUDA_FLOAT Vz2(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT xi, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
-{
-	return Vz1(x, y, xi, y2, z1, z2, H) - Vz1(x, y, xi, y1, z1, z2, H);
-}
-
-__device__
-CUDA_FLOAT Vz3(CUDA_FLOAT x, CUDA_FLOAT y, CUDA_FLOAT x1, CUDA_FLOAT x2, CUDA_FLOAT y1, CUDA_FLOAT y2, CUDA_FLOAT z1, CUDA_FLOAT z2, CUDA_FLOAT H)
-{
-	return Vz2(x, y, x2, y1, y2, z1, z2, H) - Vz2(x, y, x1, y1, y2, z1, z2, H);
-}
-
+template<typename T>
 __global__
-void Calculate(int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xStep, CUDA_FLOAT yStep, CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result)
+void CalculateFromPrismOnGrid(
+	/* Portion for calculaton for the parallel execution */ int first_block_pos, int maximumPos,
+	/* Grid definition (both input grids and output grid must have the same params) */ int nCol, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xStep, CUDA_FLOAT yStep,
+	CUDA_FLOAT* top, CUDA_FLOAT* bottom,
+	/* Multiplier to be applied to the result if needed (NULL if not needed) */ CUDA_FLOAT* multiplier,
+	CUDA_FLOAT* result)
 {
 	__shared__ CUDA_FLOAT sync[THREADS_COUNT];
 	
@@ -95,9 +63,9 @@ void Calculate(int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CU
 	
 	int pos_result = blockIdx.x + blockIdx.y * nCol;
 	
-	CUDA_FLOAT r = Vz3(x, y, x1, x2, y1, y2, t, b, 0);
-	if (dsigma != NULL)
-		r *= dsigma[pos_grid];
+	CUDA_FLOAT r = T::calc(x, y, 0, x1, x2, y1, y2, t, b);
+	if (multiplier != NULL)
+		r *= multiplier[pos_grid];
 	// printf("Field at (%f,%f) for (%f..%f,%f..%f,%f..%f) is %f\n", x,y,x1,x2,y1,y2,t,b,r);
 	
 	sync[threadIdx.x] = r;
@@ -109,6 +77,23 @@ void Calculate(int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CU
 	for (int i = 0; i < THREADS_COUNT; i++)
 		res += sync[i];
 	result[pos_result] = res;
+}
+
+void CalculateVzInParallel(dim3 blocks, dim3 threads, int first_block_pos, int maximumPos, int nCol, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xStep, CUDA_FLOAT yStep, CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result)
+{
+	LAUNCH_FUNCTION_ON_PRISM(
+#ifdef SIMPLIFY_SOURCES
+		CalculateFromPrismOnGrid<VzCalcSimplified>,
+#else
+		CalculateFromPrismOnGrid<VzCalc>,
+#endif
+		blocks,
+		threads,
+		first_block_pos, maximumPos, 
+		nCol, xLL, yLL, xStep, yStep,
+		top,bottom,
+		dsigma,
+		result);
 }
 
 int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, int firstRowToCalculate, int rowsToCalculateCount, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize, std::vector<unsigned char> devices_list)
@@ -163,7 +148,7 @@ int CalculateVz(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FL
 	while (pos < maximumPos)
 	{
 		cudaSetDevice(devices_list[currentDevice]);
-		LAUNCH(Calculate, blocks, threads, pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], dsigmad[currentDevice], resultd[currentDevice]);
+		CalculateVzInParallel(blocks, threads, pos, maximumPos, nCol, xLL, yLL, xSize, ySize, topd[currentDevice], bottomd[currentDevice], dsigmad[currentDevice], resultd[currentDevice]);
 		pos += THREADS_COUNT;
 		currentDevice = (currentDevice + 1) % deviceCount;
 	}

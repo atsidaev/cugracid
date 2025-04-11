@@ -1,3 +1,6 @@
+#ifndef GLOBAL_H
+#define GLOBAL_H
+
 #define CUDA_FLOAT double
 #define dsize sizeof(CUDA_FLOAT)
 
@@ -11,3 +14,5 @@ int main_lc(int argc, char** argv);
 int main_v3(int argc, char** argv);
 int main_m2km(int argc, char** argv);
 int main_compare(int argc, char** argv);
+
+#endif
