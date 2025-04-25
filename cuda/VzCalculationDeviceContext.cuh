@@ -29,11 +29,12 @@ void CalculateVzInParallel(dim3 blocks, dim3 threads, int first_block_pos, int m
 template<typename T>
 class VzCalculationDeviceContext : AbstractDeviceContext {
 private:
+	int _device;
 	CUDA_FLOAT *resultd, *bottomd, *topd, *dsigmad;
 	int _nCol, _nRow;
 	double _xLL, _yLL, _xSize, _ySize;
 public:
-	VzCalculationDeviceContext(CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize) {
+	VzCalculationDeviceContext(int dev, CUDA_FLOAT* top, CUDA_FLOAT* bottom, CUDA_FLOAT* dsigma, CUDA_FLOAT* result, int nCol, int nRow, CUDA_FLOAT xLL, CUDA_FLOAT yLL, CUDA_FLOAT xSize, CUDA_FLOAT ySize) {
 		this->_nCol = nCol;
 		this->_nRow = nRow;
 
@@ -41,6 +42,9 @@ public:
 		this->_yLL = yLL;
 		this->_xSize = xSize;
 		this->_ySize = ySize;
+
+		this->_device = dev;
+		cudaSetDevice(dev);
 
 		cudaMalloc((void**)&this->resultd, nCol * nRow * dsize);
 		cudaMalloc((void**)&this->bottomd, nCol * nRow * dsize);
@@ -62,10 +66,12 @@ public:
 	}
 
 	void RunCalculation(dim3 blocks, dim3 threads, int pos, int maximumPos) {
+		cudaSetDevice(_device);
 		CalculateVzInParallel<T>(blocks, threads, pos, maximumPos, _nCol, _xLL, _yLL, _xSize, _ySize, topd, bottomd, dsigmad, resultd);
 	}
 
 	void GetResult(CUDA_FLOAT* buffer) {
+		cudaSetDevice(_device);
 		cudaMemcpy(buffer, this->resultd, this->_nCol * this->_nRow * dsize, cudaMemcpyDeviceToHost);
 	}
 
