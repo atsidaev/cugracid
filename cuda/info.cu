@@ -11,13 +11,31 @@
 #include "device_launch_parameters.h"
 #endif
 
+void initializeDevicesList(std::vector<unsigned char>& devices_list)
+{
+	int deviceCount;
+	cudaGetDeviceCount(&deviceCount);
+	fprintf(stderr, "Found %d GPU devices\n", deviceCount);
+	if (devices_list.size() == 0) {
+		for (auto i = 0; i < deviceCount; i++)
+			devices_list.push_back(i);
+	}
+}
+
+std::vector<unsigned char> getGpuDevices()
+{
+	std::vector<unsigned char> devices_list;
+	initializeDevicesList(devices_list);
+	return devices_list;
+}
+
 void cudaPrintInfoForOneGpu(int num) {
 	cudaDeviceProp props;
 	cudaGetDeviceProperties(&props, num);
-	printf("%s API version %d.%d\n", props.name, props.major, props.minor);
-	printf("Max block dimensions: [%d, %d, %d]\n", props.maxThreadsDim[0], props.maxThreadsDim[1], props.maxThreadsDim[2]);
-	printf("Threads per block: %d\n", props.maxThreadsPerBlock);
-	printf("Registers per block: %d\n", props.regsPerBlock);
+	printf("%d: %s API version %d.%d\n", num, props.name, props.major, props.minor);
+	printf("\tMax block dimensions: [%d, %d, %d]\n", props.maxThreadsDim[0], props.maxThreadsDim[1], props.maxThreadsDim[2]);
+	printf("\tThreads per block: %d\n", props.maxThreadsPerBlock);
+	printf("\tRegisters per block: %d\n", props.regsPerBlock);
 }
 
 void cudaPrintInfo() {
@@ -26,19 +44,7 @@ void cudaPrintInfo() {
 
 void cudaPrintInfo(std::vector<unsigned char>& devices_list)
 {
-	int deviceCount;
-	cudaGetDeviceCount(&deviceCount);
-	printf("Found %d CUDA devices, using ", deviceCount);
-	if (devices_list.size() > 0)
-		printf("%d", devices_list.size());
-	else
-		printf("all");
-	printf(" of them\n");
-
-	if (devices_list.size() == 0) {
-		for (auto i = 0; i < deviceCount; i++)
-			devices_list.push_back(i);
-	}
+	fprintf(stderr, "Using %ld GPU devices\n", devices_list.size());
 
 	if (devices_list.size() > 0) {
 		for (auto i = 0; i < devices_list.size(); i++)
@@ -46,6 +52,5 @@ void cudaPrintInfo(std::vector<unsigned char>& devices_list)
 	}
 	else
 		cudaPrintInfoForOneGpu(0);
-
 }
 

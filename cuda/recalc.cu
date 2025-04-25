@@ -8,8 +8,7 @@
 #endif
 
 #include "../global.h"
-
-#define THREADS_COUNT 128
+#include "gpu_global.h"
 
 #define sign(X) (X < 0 ? -1 : 1)
 

@@ -18,7 +18,7 @@ CFLAGS=$(NVCFLAGS)
 #LDFLAGS=-lcudart
 
 BINARIES:=main
-APPS:=v3 lc m_to_km compare
+APPS:=vz lc m_to_km compare
 
 all: $(BINARIES)
 
@@ -26,7 +26,10 @@ clean:
 	find -name '*.o' -delete
 	rm $(BINARIES)
 
-main:	main.o $(APPS:%=apps/%.o) calc/direct.o calc/golden.o cuda/info.o cuda/Vz.o grid/Grid.o
+main:	main.o $(APPS:%=apps/%.o) calc/direct.o calc/golden.o cuda/info.o cuda/Vz.o cuda/CalculateAdditiveField.o grid/Grid.o
+
+test: main
+	./main vz --test
 
 %.o:	%.cu
 	$(CC) -c $(CFLAGS) $^ -o $@

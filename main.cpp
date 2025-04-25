@@ -11,7 +11,7 @@ typedef struct geo_prog_t {
 } geo_prog_t;
 
 geo_prog_t progs[] {
-	{ "v3", main_v3 },
+	{ "vz", main_vz },
 	{ "lc", main_lc },
 	{ "m2km", main_m2km },
 	{ "compare", main_compare },

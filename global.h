@@ -11,7 +11,7 @@
 const double GRAVITY_CONST = 6.67384; // CODATA
 
 int main_lc(int argc, char** argv);
-int main_v3(int argc, char** argv);
+int main_vz(int argc, char** argv);
 int main_m2km(int argc, char** argv);
 int main_compare(int argc, char** argv);
 

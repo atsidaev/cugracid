@@ -65,7 +65,7 @@ CUDA_FLOAT* CalculateDirectProblem(Grid& bottom, Grid& top, double dsigma, Grid*
 
 	if (mpi_rank != MPI_MASTER)
 	{
-#ifdef USE_MPI		
+#ifdef USE_MPI
 		MPI_Send(result, grid_length, MPI_DOUBLE, MPI_MASTER, 0, MPI_COMM_WORLD);
 #endif
 	}
